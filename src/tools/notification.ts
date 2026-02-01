@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -72,9 +75,7 @@ export function registerNotificationTools(server: McpServer): void {
           .array(z.string())
           .min(1)
           .describe("Array of user IDs to send the notification to"),
-        message: z
-          .string()
-          .describe("The notification message text"),
+        message: z.string().describe("The notification message text"),
         url: z
           .string()
           .optional()

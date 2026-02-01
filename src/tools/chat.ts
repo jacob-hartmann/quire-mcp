@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -64,8 +67,7 @@ export function registerChatTools(server: McpServer): void {
   server.registerTool(
     "quire.createChat",
     {
-      description:
-        "Create a new chat channel in an organization or project.",
+      description: "Create a new chat channel in an organization or project.",
       inputSchema: z.object({
         ownerType: z
           .enum(["organization", "project"])
@@ -98,7 +100,8 @@ export function registerChatTools(server: McpServer): void {
         };
       }
 
-      const params: { name: string; description?: string; members?: string[] } = { name };
+      const params: { name: string; description?: string; members?: string[] } =
+        { name };
       if (description !== undefined) params.description = description;
       if (members !== undefined) params.members = members;
 
@@ -126,12 +129,27 @@ export function registerChatTools(server: McpServer): void {
   server.registerTool(
     "quire.getChat",
     {
-      description: "Get a chat channel by OID.",
+      description:
+        "Get a chat channel by OID, or by owner type/ID and chat ID.",
       inputSchema: z.object({
-        oid: z.string().describe("The chat channel OID (unique identifier)"),
+        oid: z
+          .string()
+          .optional()
+          .describe(
+            "The chat channel OID (unique identifier). Use this OR ownerType+ownerId+chatId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using chatId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using chatId)"),
+        chatId: z.string().optional().describe("The chat ID within the owner"),
       }),
     },
-    async ({ oid }, extra) => {
+    async ({ oid, ownerType, ownerId, chatId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -145,7 +163,37 @@ export function registerChatTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.getChat(oid);
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !chatId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'chatId'",
+            },
+          ],
+        };
+      }
+
+      let result;
+      if (oid) {
+        result = await clientResult.client.getChat(oid);
+      } else if (ownerType && ownerId && chatId) {
+        result = await clientResult.client.getChat(ownerType, ownerId, chatId);
+      } else {
+        // Should never happen due to validation above
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
@@ -209,9 +257,24 @@ export function registerChatTools(server: McpServer): void {
   server.registerTool(
     "quire.updateChat",
     {
-      description: "Update a chat channel's name, description, or members.",
+      description:
+        "Update a chat channel's name, description, or members by OID, or by owner type/ID and chat ID.",
       inputSchema: z.object({
-        oid: z.string().describe("The chat channel OID (unique identifier)"),
+        oid: z
+          .string()
+          .optional()
+          .describe(
+            "The chat channel OID (unique identifier). Use this OR ownerType+ownerId+chatId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using chatId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using chatId)"),
+        chatId: z.string().optional().describe("The chat ID within the owner"),
         name: z.string().optional().describe("New chat channel name"),
         description: z
           .string()
@@ -231,7 +294,20 @@ export function registerChatTools(server: McpServer): void {
           .describe("User IDs to remove from members"),
       }),
     },
-    async ({ oid, name, description, members, addMembers, removeMembers }, extra) => {
+    async (
+      {
+        oid,
+        ownerType,
+        ownerId,
+        chatId,
+        name,
+        description,
+        members,
+        addMembers,
+        removeMembers,
+      },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -240,6 +316,19 @@ export function registerChatTools(server: McpServer): void {
             {
               type: "text" as const,
               text: `Authentication Error: ${clientResult.error}`,
+            },
+          ],
+        };
+      }
+
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !chatId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'chatId'",
             },
           ],
         };
@@ -258,7 +347,28 @@ export function registerChatTools(server: McpServer): void {
       if (addMembers !== undefined) params.addMembers = addMembers;
       if (removeMembers !== undefined) params.removeMembers = removeMembers;
 
-      const result = await clientResult.client.updateChat(oid, params);
+      let result;
+      if (oid) {
+        result = await clientResult.client.updateChat(oid, params);
+      } else if (ownerType && ownerId && chatId) {
+        result = await clientResult.client.updateChat(
+          ownerType,
+          ownerId,
+          chatId,
+          params
+        );
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
@@ -278,14 +388,30 @@ export function registerChatTools(server: McpServer): void {
   server.registerTool(
     "quire.deleteChat",
     {
-      description: "Delete a chat channel. This action cannot be undone.",
+      description:
+        "Delete a chat channel by OID, or by owner type/ID and chat ID. This action cannot be undone.",
       inputSchema: z.object({
         oid: z
           .string()
-          .describe("The chat channel OID (unique identifier) to delete"),
+          .optional()
+          .describe(
+            "The chat channel OID (unique identifier). Use this OR ownerType+ownerId+chatId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using chatId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using chatId)"),
+        chatId: z
+          .string()
+          .optional()
+          .describe("The chat ID within the owner to delete"),
       }),
     },
-    async ({ oid }, extra) => {
+    async ({ oid, ownerType, ownerId, chatId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -299,16 +425,50 @@ export function registerChatTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.deleteChat(oid);
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !chatId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'chatId'",
+            },
+          ],
+        };
+      }
+
+      let result;
+      if (oid) {
+        result = await clientResult.client.deleteChat(oid);
+      } else if (ownerType && ownerId && chatId) {
+        result = await clientResult.client.deleteChat(
+          ownerType,
+          ownerId,
+          chatId
+        );
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
 
+      const identifier = oid ?? `${ownerType}/${ownerId}/${chatId}`;
       return {
         content: [
           {
             type: "text" as const,
-            text: `Chat channel ${oid} deleted successfully.`,
+            text: `Chat channel ${identifier} deleted successfully.`,
           },
         ],
       };

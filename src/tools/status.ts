@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -114,11 +117,7 @@ export function registerStatusTools(server: McpServer): void {
         projectId: z
           .string()
           .describe("The project ID (e.g., 'my-project') or OID"),
-        value: z
-          .number()
-          .min(0)
-          .max(100)
-          .describe("The status value (0-100)"),
+        value: z.number().min(0).max(100).describe("The status value (0-100)"),
       }),
     },
     async ({ projectId, value }, extra) => {

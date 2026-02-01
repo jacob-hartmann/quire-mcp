@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -64,8 +67,7 @@ export function registerDocumentTools(server: McpServer): void {
   server.registerTool(
     "quire.createDocument",
     {
-      description:
-        "Create a new document in an organization or project.",
+      description: "Create a new document in an organization or project.",
       inputSchema: z.object({
         ownerType: z
           .enum(["organization", "project"])
@@ -121,12 +123,30 @@ export function registerDocumentTools(server: McpServer): void {
   server.registerTool(
     "quire.getDocument",
     {
-      description: "Get a document by OID.",
+      description:
+        "Get a document by OID, or by owner type/ID and document ID.",
       inputSchema: z.object({
-        oid: z.string().describe("The document OID (unique identifier)"),
+        oid: z
+          .string()
+          .optional()
+          .describe(
+            "The document OID (unique identifier). Use this OR ownerType+ownerId+documentId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using documentId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using documentId)"),
+        documentId: z
+          .string()
+          .optional()
+          .describe("The document ID within the owner"),
       }),
     },
-    async ({ oid }, extra) => {
+    async ({ oid, ownerType, ownerId, documentId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -140,7 +160,40 @@ export function registerDocumentTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.getDocument(oid);
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !documentId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'",
+            },
+          ],
+        };
+      }
+
+      let result;
+      if (oid) {
+        result = await clientResult.client.getDocument(oid);
+      } else if (ownerType && ownerId && documentId) {
+        result = await clientResult.client.getDocument(
+          ownerType,
+          ownerId,
+          documentId
+        );
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
@@ -184,7 +237,10 @@ export function registerDocumentTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.listDocuments(ownerType, ownerId);
+      const result = await clientResult.client.listDocuments(
+        ownerType,
+        ownerId
+      );
       if (!result.success) {
         return formatError(result.error);
       }
@@ -204,9 +260,27 @@ export function registerDocumentTools(server: McpServer): void {
   server.registerTool(
     "quire.updateDocument",
     {
-      description: "Update a document's name or content.",
+      description:
+        "Update a document's name or content by OID, or by owner type/ID and document ID.",
       inputSchema: z.object({
-        oid: z.string().describe("The document OID (unique identifier)"),
+        oid: z
+          .string()
+          .optional()
+          .describe(
+            "The document OID (unique identifier). Use this OR ownerType+ownerId+documentId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using documentId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using documentId)"),
+        documentId: z
+          .string()
+          .optional()
+          .describe("The document ID within the owner"),
         name: z.string().optional().describe("New document name/title"),
         content: z
           .string()
@@ -214,7 +288,7 @@ export function registerDocumentTools(server: McpServer): void {
           .describe("New document content in markdown format"),
       }),
     },
-    async ({ oid, name, content }, extra) => {
+    async ({ oid, ownerType, ownerId, documentId, name, content }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -228,11 +302,45 @@ export function registerDocumentTools(server: McpServer): void {
         };
       }
 
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !documentId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'",
+            },
+          ],
+        };
+      }
+
       const params: { name?: string; content?: string } = {};
       if (name !== undefined) params.name = name;
       if (content !== undefined) params.content = content;
 
-      const result = await clientResult.client.updateDocument(oid, params);
+      let result;
+      if (oid) {
+        result = await clientResult.client.updateDocument(oid, params);
+      } else if (ownerType && ownerId && documentId) {
+        result = await clientResult.client.updateDocument(
+          ownerType,
+          ownerId,
+          documentId,
+          params
+        );
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
@@ -252,14 +360,30 @@ export function registerDocumentTools(server: McpServer): void {
   server.registerTool(
     "quire.deleteDocument",
     {
-      description: "Delete a document. This action cannot be undone.",
+      description:
+        "Delete a document by OID, or by owner type/ID and document ID. This action cannot be undone.",
       inputSchema: z.object({
         oid: z
           .string()
-          .describe("The document OID (unique identifier) to delete"),
+          .optional()
+          .describe(
+            "The document OID (unique identifier). Use this OR ownerType+ownerId+documentId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using documentId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using documentId)"),
+        documentId: z
+          .string()
+          .optional()
+          .describe("The document ID within the owner to delete"),
       }),
     },
-    async ({ oid }, extra) => {
+    async ({ oid, ownerType, ownerId, documentId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -273,16 +397,50 @@ export function registerDocumentTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.deleteDocument(oid);
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !documentId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'",
+            },
+          ],
+        };
+      }
+
+      let result;
+      if (oid) {
+        result = await clientResult.client.deleteDocument(oid);
+      } else if (ownerType && ownerId && documentId) {
+        result = await clientResult.client.deleteDocument(
+          ownerType,
+          ownerId,
+          documentId
+        );
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
 
+      const identifier = oid ?? `${ownerType}/${ownerId}/${documentId}`;
       return {
         content: [
           {
             type: "text" as const,
-            text: `Document ${oid} deleted successfully.`,
+            text: `Document ${identifier} deleted successfully.`,
           },
         ],
       };

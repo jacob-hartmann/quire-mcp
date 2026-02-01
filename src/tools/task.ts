@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -233,10 +236,7 @@ export function registerTaskTools(server: McpServer): void {
           .string()
           .optional()
           .describe("Due date in ISO 8601 format (e.g., '2024-12-31')"),
-        start: z
-          .string()
-          .optional()
-          .describe("Start date in ISO 8601 format"),
+        start: z.string().optional().describe("Start date in ISO 8601 format"),
         assignees: z
           .array(z.string())
           .optional()
@@ -365,10 +365,7 @@ export function registerTaskTools(server: McpServer): void {
           .string()
           .optional()
           .describe("Due date in ISO 8601 format (e.g., '2024-12-31')"),
-        start: z
-          .string()
-          .optional()
-          .describe("Start date in ISO 8601 format"),
+        start: z.string().optional().describe("Start date in ISO 8601 format"),
         assignees: z
           .array(z.string())
           .optional()
@@ -461,7 +458,8 @@ export function registerTaskTools(server: McpServer): void {
       if (start !== undefined) updateParams.start = start;
       if (assignees !== undefined) updateParams.assignees = assignees;
       if (addAssignees !== undefined) updateParams.addAssignees = addAssignees;
-      if (removeAssignees !== undefined) updateParams.removeAssignees = removeAssignees;
+      if (removeAssignees !== undefined)
+        updateParams.removeAssignees = removeAssignees;
       if (tags !== undefined) updateParams.tags = tags;
       if (addTags !== undefined) updateParams.addTags = addTags;
       if (removeTags !== undefined) updateParams.removeTags = removeTags;
@@ -469,7 +467,11 @@ export function registerTaskTools(server: McpServer): void {
       const result = oid
         ? await clientResult.client.updateTask(oid, updateParams)
         : projectId && taskId !== undefined
-          ? await clientResult.client.updateTask(projectId, taskId, updateParams)
+          ? await clientResult.client.updateTask(
+              projectId,
+              taskId,
+              updateParams
+            )
           : (() => {
               // This should be unreachable because of the validation above.
               return {
@@ -508,9 +510,7 @@ export function registerTaskTools(server: McpServer): void {
       description:
         "Delete a task and all its subtasks. This action cannot be undone.",
       inputSchema: z.object({
-        oid: z
-          .string()
-          .describe("The task OID (unique identifier) to delete"),
+        oid: z.string().describe("The task OID (unique identifier) to delete"),
       }),
     },
     async ({ oid }, extra) => {
@@ -556,7 +556,9 @@ export function registerTaskTools(server: McpServer): void {
           .describe("The project ID (e.g., 'my-project') or OID to search in"),
         keyword: z
           .string()
-          .describe("Search keyword to match against task names and descriptions"),
+          .describe(
+            "Search keyword to match against task names and descriptions"
+          ),
         status: z
           .number()
           .min(0)
@@ -578,7 +580,10 @@ export function registerTaskTools(server: McpServer): void {
         tagId: z.number().optional().describe("Filter by tag ID"),
       }),
     },
-    async ({ projectId, keyword, status, priority, assigneeId, tagId }, extra) => {
+    async (
+      { projectId, keyword, status, priority, assigneeId, tagId },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -604,7 +609,11 @@ export function registerTaskTools(server: McpServer): void {
       if (assigneeId !== undefined) options.assigneeId = assigneeId;
       if (tagId !== undefined) options.tagId = tagId;
 
-      const result = await clientResult.client.searchTasks(projectId, keyword, options);
+      const result = await clientResult.client.searchTasks(
+        projectId,
+        keyword,
+        options
+      );
       if (!result.success) {
         return formatError(result.error);
       }
@@ -628,9 +637,7 @@ export function registerTaskTools(server: McpServer): void {
         "Create a new task immediately after a specified task. " +
         "The new task will be at the same level as the reference task.",
       inputSchema: z.object({
-        taskOid: z
-          .string()
-          .describe("The OID of the task to insert after"),
+        taskOid: z.string().describe("The OID of the task to insert after"),
         name: z.string().describe("The task name/title (required)"),
         description: z
           .string()
@@ -652,10 +659,7 @@ export function registerTaskTools(server: McpServer): void {
           .string()
           .optional()
           .describe("Due date in ISO 8601 format (e.g., '2024-12-31')"),
-        start: z
-          .string()
-          .optional()
-          .describe("Start date in ISO 8601 format"),
+        start: z.string().optional().describe("Start date in ISO 8601 format"),
         assignees: z
           .array(z.string())
           .optional()
@@ -664,7 +668,17 @@ export function registerTaskTools(server: McpServer): void {
       }),
     },
     async (
-      { taskOid, name, description, priority, status, due, start, assignees, tags },
+      {
+        taskOid,
+        name,
+        description,
+        priority,
+        status,
+        due,
+        start,
+        assignees,
+        tags,
+      },
       extra
     ) => {
       const clientResult = await getQuireClient(extra);
@@ -722,9 +736,7 @@ export function registerTaskTools(server: McpServer): void {
         "Create a new task immediately before a specified task. " +
         "The new task will be at the same level as the reference task.",
       inputSchema: z.object({
-        taskOid: z
-          .string()
-          .describe("The OID of the task to insert before"),
+        taskOid: z.string().describe("The OID of the task to insert before"),
         name: z.string().describe("The task name/title (required)"),
         description: z
           .string()
@@ -746,10 +758,7 @@ export function registerTaskTools(server: McpServer): void {
           .string()
           .optional()
           .describe("Due date in ISO 8601 format (e.g., '2024-12-31')"),
-        start: z
-          .string()
-          .optional()
-          .describe("Start date in ISO 8601 format"),
+        start: z.string().optional().describe("Start date in ISO 8601 format"),
         assignees: z
           .array(z.string())
           .optional()
@@ -758,7 +767,17 @@ export function registerTaskTools(server: McpServer): void {
       }),
     },
     async (
-      { taskOid, name, description, priority, status, due, start, assignees, tags },
+      {
+        taskOid,
+        name,
+        description,
+        priority,
+        status,
+        due,
+        start,
+        assignees,
+        tags,
+      },
       extra
     ) => {
       const clientResult = await getQuireClient(extra);
@@ -792,7 +811,10 @@ export function registerTaskTools(server: McpServer): void {
       if (assignees !== undefined) params.assignees = assignees;
       if (tags !== undefined) params.tags = tags;
 
-      const result = await clientResult.client.createTaskBefore(taskOid, params);
+      const result = await clientResult.client.createTaskBefore(
+        taskOid,
+        params
+      );
       if (!result.success) {
         return formatError(result.error);
       }
@@ -815,12 +837,14 @@ export function registerTaskTools(server: McpServer): void {
       description:
         "Search for tasks within a specific folder by keyword and optional filters.",
       inputSchema: z.object({
-        folderOid: z
+        folderId: z
           .string()
-          .describe("The folder OID to search in"),
+          .describe("The folder ID (e.g., 'my-folder') or OID to search in"),
         keyword: z
           .string()
-          .describe("Search keyword to match against task names and descriptions"),
+          .describe(
+            "Search keyword to match against task names and descriptions"
+          ),
         status: z
           .number()
           .min(0)
@@ -832,7 +856,9 @@ export function registerTaskTools(server: McpServer): void {
           .min(-1)
           .max(2)
           .optional()
-          .describe("Filter by priority: -1 (low), 0 (medium), 1 (high), 2 (urgent)"),
+          .describe(
+            "Filter by priority: -1 (low), 0 (medium), 1 (high), 2 (urgent)"
+          ),
         assigneeId: z
           .string()
           .optional()
@@ -840,7 +866,10 @@ export function registerTaskTools(server: McpServer): void {
         tagId: z.number().optional().describe("Filter by tag ID"),
       }),
     },
-    async ({ folderOid, keyword, status, priority, assigneeId, tagId }, extra) => {
+    async (
+      { folderId, keyword, status, priority, assigneeId, tagId },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -866,7 +895,7 @@ export function registerTaskTools(server: McpServer): void {
       if (tagId !== undefined) options.tagId = tagId;
 
       const result = await clientResult.client.searchFolderTasks(
-        folderOid,
+        folderId,
         keyword,
         options
       );
@@ -898,7 +927,9 @@ export function registerTaskTools(server: McpServer): void {
           .describe("The organization ID (e.g., 'my-org') or OID to search in"),
         keyword: z
           .string()
-          .describe("Search keyword to match against task names and descriptions"),
+          .describe(
+            "Search keyword to match against task names and descriptions"
+          ),
         status: z
           .number()
           .min(0)
@@ -910,7 +941,9 @@ export function registerTaskTools(server: McpServer): void {
           .min(-1)
           .max(2)
           .optional()
-          .describe("Filter by priority: -1 (low), 0 (medium), 1 (high), 2 (urgent)"),
+          .describe(
+            "Filter by priority: -1 (low), 0 (medium), 1 (high), 2 (urgent)"
+          ),
         assigneeId: z
           .string()
           .optional()
@@ -918,7 +951,10 @@ export function registerTaskTools(server: McpServer): void {
         tagId: z.number().optional().describe("Filter by tag ID"),
       }),
     },
-    async ({ organizationId, keyword, status, priority, assigneeId, tagId }, extra) => {
+    async (
+      { organizationId, keyword, status, priority, assigneeId, tagId },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {

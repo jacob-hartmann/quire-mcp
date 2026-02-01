@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -74,15 +77,13 @@ export function registerAttachmentTools(server: McpServer): void {
         filename: z
           .string()
           .describe("The filename for the attachment (e.g., 'document.txt')"),
-        content: z
-          .string()
-          .describe("The file content as a string"),
+        content: z.string().describe("The file content as a string"),
         mimeType: z
           .string()
           .optional()
           .describe(
             "The MIME type of the file (e.g., 'text/plain', 'application/pdf'). " +
-            "Defaults to 'application/octet-stream'"
+              "Defaults to 'application/octet-stream'"
           ),
       }),
     },
@@ -131,19 +132,19 @@ export function registerAttachmentTools(server: McpServer): void {
       inputSchema: z.object({
         commentOid: z
           .string()
-          .describe("The comment OID (unique identifier) to attach the file to"),
+          .describe(
+            "The comment OID (unique identifier) to attach the file to"
+          ),
         filename: z
           .string()
           .describe("The filename for the attachment (e.g., 'document.txt')"),
-        content: z
-          .string()
-          .describe("The file content as a string"),
+        content: z.string().describe("The file content as a string"),
         mimeType: z
           .string()
           .optional()
           .describe(
             "The MIME type of the file (e.g., 'text/plain', 'application/pdf'). " +
-            "Defaults to 'application/octet-stream'"
+              "Defaults to 'application/octet-stream'"
           ),
       }),
     },

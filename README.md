@@ -116,6 +116,7 @@ pnpm inspect:dist
 ```
 
 If you see `Ignored build scripts: esbuild...`, run `pnpm approve-builds` and allow `esbuild`.
+In CI we install dependencies with lifecycle scripts disabled (`pnpm install --ignore-scripts`) and then explicitly rebuild only `esbuild` for the production build job.
 
 ## Security
 

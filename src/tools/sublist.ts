@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -64,8 +67,7 @@ export function registerSublistTools(server: McpServer): void {
   server.registerTool(
     "quire.createSublist",
     {
-      description:
-        "Create a new sublist in an organization or project.",
+      description: "Create a new sublist in an organization or project.",
       inputSchema: z.object({
         ownerType: z
           .enum(["organization", "project"])
@@ -74,10 +76,7 @@ export function registerSublistTools(server: McpServer): void {
           .string()
           .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
         name: z.string().describe("The sublist name"),
-        description: z
-          .string()
-          .optional()
-          .describe("The sublist description"),
+        description: z.string().optional().describe("The sublist description"),
       }),
     },
     async ({ ownerType, ownerId, name, description }, extra) => {
@@ -121,12 +120,29 @@ export function registerSublistTools(server: McpServer): void {
   server.registerTool(
     "quire.getSublist",
     {
-      description: "Get a sublist by OID.",
+      description: "Get a sublist by OID, or by owner type/ID and sublist ID.",
       inputSchema: z.object({
-        oid: z.string().describe("The sublist OID (unique identifier)"),
+        oid: z
+          .string()
+          .optional()
+          .describe(
+            "The sublist OID (unique identifier). Use this OR ownerType+ownerId+sublistId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using sublistId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using sublistId)"),
+        sublistId: z
+          .string()
+          .optional()
+          .describe("The sublist ID within the owner"),
       }),
     },
-    async ({ oid }, extra) => {
+    async ({ oid, ownerType, ownerId, sublistId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -140,7 +156,40 @@ export function registerSublistTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.getSublist(oid);
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !sublistId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'",
+            },
+          ],
+        };
+      }
+
+      let result;
+      if (oid) {
+        result = await clientResult.client.getSublist(oid);
+      } else if (ownerType && ownerId && sublistId) {
+        result = await clientResult.client.getSublist(
+          ownerType,
+          ownerId,
+          sublistId
+        );
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
@@ -204,17 +253,35 @@ export function registerSublistTools(server: McpServer): void {
   server.registerTool(
     "quire.updateSublist",
     {
-      description: "Update a sublist's name or description.",
+      description:
+        "Update a sublist's name or description by OID, or by owner type/ID and sublist ID.",
       inputSchema: z.object({
-        oid: z.string().describe("The sublist OID (unique identifier)"),
-        name: z.string().optional().describe("New sublist name"),
-        description: z
+        oid: z
           .string()
           .optional()
-          .describe("New sublist description"),
+          .describe(
+            "The sublist OID (unique identifier). Use this OR ownerType+ownerId+sublistId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using sublistId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using sublistId)"),
+        sublistId: z
+          .string()
+          .optional()
+          .describe("The sublist ID within the owner"),
+        name: z.string().optional().describe("New sublist name"),
+        description: z.string().optional().describe("New sublist description"),
       }),
     },
-    async ({ oid, name, description }, extra) => {
+    async (
+      { oid, ownerType, ownerId, sublistId, name, description },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -228,11 +295,45 @@ export function registerSublistTools(server: McpServer): void {
         };
       }
 
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !sublistId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'",
+            },
+          ],
+        };
+      }
+
       const params: { name?: string; description?: string } = {};
       if (name !== undefined) params.name = name;
       if (description !== undefined) params.description = description;
 
-      const result = await clientResult.client.updateSublist(oid, params);
+      let result;
+      if (oid) {
+        result = await clientResult.client.updateSublist(oid, params);
+      } else if (ownerType && ownerId && sublistId) {
+        result = await clientResult.client.updateSublist(
+          ownerType,
+          ownerId,
+          sublistId,
+          params
+        );
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
@@ -252,14 +353,30 @@ export function registerSublistTools(server: McpServer): void {
   server.registerTool(
     "quire.deleteSublist",
     {
-      description: "Delete a sublist. This action cannot be undone.",
+      description:
+        "Delete a sublist by OID, or by owner type/ID and sublist ID. This action cannot be undone.",
       inputSchema: z.object({
         oid: z
           .string()
-          .describe("The sublist OID (unique identifier) to delete"),
+          .optional()
+          .describe(
+            "The sublist OID (unique identifier). Use this OR ownerType+ownerId+sublistId"
+          ),
+        ownerType: z
+          .enum(["organization", "project"])
+          .optional()
+          .describe("The type of owner (required when using sublistId)"),
+        ownerId: z
+          .string()
+          .optional()
+          .describe("The owner ID or OID (required when using sublistId)"),
+        sublistId: z
+          .string()
+          .optional()
+          .describe("The sublist ID within the owner to delete"),
       }),
     },
-    async ({ oid }, extra) => {
+    async ({ oid, ownerType, ownerId, sublistId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -273,16 +390,50 @@ export function registerSublistTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.deleteSublist(oid);
+      // Validate input combinations
+      if (!oid && (!ownerType || !ownerId || !sublistId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'",
+            },
+          ],
+        };
+      }
+
+      let result;
+      if (oid) {
+        result = await clientResult.client.deleteSublist(oid);
+      } else if (ownerType && ownerId && sublistId) {
+        result = await clientResult.client.deleteSublist(
+          ownerType,
+          ownerId,
+          sublistId
+        );
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
 
+      const identifier = oid ?? `${ownerType}/${ownerId}/${sublistId}`;
       return {
         content: [
           {
             type: "text" as const,
-            text: `Sublist ${oid} deleted successfully.`,
+            text: `Sublist ${identifier} deleted successfully.`,
           },
         ],
       };

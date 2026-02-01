@@ -55,7 +55,10 @@ export function getHttpServerConfig(): HttpServerConfig | undefined {
   }
 
   const host = process.env["MCP_SERVER_HOST"] ?? "127.0.0.1";
-  const port = parseInt(process.env["MCP_SERVER_PORT"] ?? DEFAULT_SERVER_PORT, 10);
+  const port = parseInt(
+    process.env["MCP_SERVER_PORT"] ?? DEFAULT_SERVER_PORT,
+    10
+  );
   // Use localhost in issuer URL for client compatibility (127.0.0.1 != localhost for OAuth)
   const issuerUrl = process.env["MCP_ISSUER_URL"] ?? `http://localhost:${port}`;
   const quireRedirectUri =
