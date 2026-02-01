@@ -98,18 +98,48 @@ export async function startHttpServer(
   app.use("/oauth", limiter);
   app.use("/mcp", limiter);
 
-  // CORS middleware - restrict to same-origin by default
-  // MCP clients typically don't need cross-origin access
+  // CORS middleware - allow OAuth endpoints, restrict MCP endpoint
   app.use((req, res, next) => {
-    // Only allow same-origin requests by not setting CORS headers
-    // If cross-origin access is needed, configure allowed origins explicitly
     const origin = req.headers.origin;
-    if (origin) {
-      // Block cross-origin requests to sensitive endpoints
-      res.status(403).json({ error: "Cross-origin requests not allowed" });
+    if (!origin) {
+      next();
       return;
     }
-    next();
+
+    // Allow CORS for OAuth discovery and flow endpoints
+    // mcpAuthRouter mounts at root: /authorize, /token, /register
+    // Our custom callback is at /oauth/callback
+    const allowedPaths = [
+      "/.well-known/oauth-authorization-server",
+      "/.well-known/oauth-protected-resource",
+      "/authorize",
+      "/token",
+      "/register",
+      "/oauth/callback",
+    ];
+    const isAllowed = allowedPaths.some((path) => req.path.startsWith(path));
+
+    if (isAllowed) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization"
+      );
+      res.setHeader("Access-Control-Max-Age", "86400");
+
+      // Handle preflight
+      if (req.method === "OPTIONS") {
+        res.status(204).end();
+        return;
+      }
+
+      next();
+      return;
+    }
+
+    // Block cross-origin requests to /mcp endpoint
+    res.status(403).json({ error: "Cross-origin requests not allowed" });
   });
 
   // Cache-Control headers for OAuth and MCP endpoints
@@ -123,11 +153,22 @@ export async function startHttpServer(
     next();
   };
 
+  // Apply no-cache to all OAuth endpoints (both root-level and /oauth/*)
   app.use("/oauth", noCacheMiddleware);
   app.use("/mcp", noCacheMiddleware);
+  app.use("/authorize", noCacheMiddleware);
+  app.use("/token", noCacheMiddleware);
+  app.use("/register", noCacheMiddleware);
+  app.use("/.well-known", noCacheMiddleware);
 
   // Parse JSON bodies
   app.use(express.json());
+
+  // Debug: log all incoming requests
+  app.use((req, _res, next) => {
+    console.error(`[quire-mcp] ${req.method} ${req.path}`);
+    next();
+  });
 
   // Mount OAuth auth router (AS metadata, authorize, token, register endpoints)
   app.use(
