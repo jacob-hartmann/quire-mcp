@@ -1,0 +1,408 @@
+/**
+ * HTTP Server for MCP
+ *
+ * Creates an Express-based HTTP server with:
+ * - OAuth authorization server endpoints (via mcpAuthRouter)
+ * - OAuth callback from Quire
+ * - Protected MCP endpoint with Bearer auth
+ * - StreamableHTTP transport
+ * - Security hardening (helmet, rate limiting, CORS, cache control)
+ */
+
+import { randomUUID } from "node:crypto";
+import express from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
+import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+
+import type { HttpServerConfig } from "./config.js";
+import {
+  QuireProxyOAuthProvider,
+  handleQuireOAuthCallback,
+} from "./quire-oauth-provider.js";
+import { getServerTokenStore } from "./server-token-store.js";
+import {
+  SESSION_ID_DISPLAY_LENGTH,
+  JSONRPC_ERROR_INVALID_REQUEST,
+  JSONRPC_ERROR_INTERNAL,
+} from "../constants.js";
+import { escapeHtml } from "../utils/html.js";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Token cleanup interval in milliseconds (5 minutes) */
+const TOKEN_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+/** Session idle timeout in milliseconds (30 minutes) */
+const SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+
+/** Rate limit: max requests per window */
+const RATE_LIMIT_MAX = 100;
+
+/** Rate limit window in milliseconds (1 minute) */
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+// ---------------------------------------------------------------------------
+// HTTP Server
+// ---------------------------------------------------------------------------
+
+/** Track session last activity for idle timeout */
+interface SessionInfo {
+  transport: StreamableHTTPServerTransport;
+  lastActivity: number;
+}
+
+/**
+ * Start the HTTP server with OAuth and MCP endpoints.
+ */
+export async function startHttpServer(
+  getServer: () => McpServer,
+  config: HttpServerConfig
+): Promise<void> {
+  const { host, port, issuerUrl } = config;
+
+  // Create OAuth provider
+  const provider = new QuireProxyOAuthProvider(config);
+
+  // Create Express app with DNS rebinding protection
+  const app = createMcpExpressApp({ host });
+
+  // Security headers via helmet
+  app.use(
+    helmet({
+      // Disable contentSecurityPolicy as MCP uses JSON-RPC
+      contentSecurityPolicy: false,
+      // Keep other security headers
+      crossOriginEmbedderPolicy: false,
+    })
+  );
+
+  // Rate limiting for OAuth and MCP endpoints
+  const limiter = rateLimit({
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    max: RATE_LIMIT_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests, please try again later" },
+  });
+
+  // Apply rate limiting to sensitive endpoints
+  app.use("/oauth", limiter);
+  app.use("/mcp", limiter);
+
+  // CORS middleware - restrict to same-origin by default
+  // MCP clients typically don't need cross-origin access
+  app.use((req, res, next) => {
+    // Only allow same-origin requests by not setting CORS headers
+    // If cross-origin access is needed, configure allowed origins explicitly
+    const origin = req.headers.origin;
+    if (origin) {
+      // Block cross-origin requests to sensitive endpoints
+      res.status(403).json({ error: "Cross-origin requests not allowed" });
+      return;
+    }
+    next();
+  });
+
+  // Cache-Control headers for OAuth and MCP endpoints
+  const noCacheMiddleware: express.RequestHandler = (_req, res, next) => {
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, private"
+    );
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+  };
+
+  app.use("/oauth", noCacheMiddleware);
+  app.use("/mcp", noCacheMiddleware);
+
+  // Parse JSON bodies
+  app.use(express.json());
+
+  // Mount OAuth auth router (AS metadata, authorize, token, register endpoints)
+  app.use(
+    mcpAuthRouter({
+      provider,
+      issuerUrl: new URL(issuerUrl),
+      scopesSupported: ["read:user"],
+      resourceName: "Quire MCP Server",
+    })
+  );
+
+  // Handle OAuth callback from Quire
+  app.get("/oauth/callback", async (req, res) => {
+    const { code, state, error, error_description } = req.query;
+
+    // Handle error from Quire
+    if (error) {
+      const errorMsg = typeof error === "string" ? error : "Unknown error";
+      const errorDesc =
+        typeof error_description === "string" ? error_description : errorMsg;
+      console.error(`[quire-mcp] Quire OAuth error: ${errorMsg}`);
+      res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Authorization Failed</title></head>
+        <body>
+          <h1>Authorization Failed</h1>
+          <p>${escapeHtml(errorDesc)}</p>
+          <p>You can close this window.</p>
+        </body>
+        </html>
+      `);
+      return;
+    }
+
+    // Validate params
+    if (typeof code !== "string" || typeof state !== "string") {
+      res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Invalid Request</title></head>
+        <body>
+          <h1>Invalid Request</h1>
+          <p>Missing code or state parameter.</p>
+        </body>
+        </html>
+      `);
+      return;
+    }
+
+    // Process callback
+    const result = await handleQuireOAuthCallback(
+      config,
+      getServerTokenStore(),
+      code,
+      state
+    );
+
+    if ("error" in result) {
+      res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Authorization Failed</title></head>
+        <body>
+          <h1>Authorization Failed</h1>
+          <p>${escapeHtml(result.errorDescription)}</p>
+          <p>You can close this window.</p>
+        </body>
+        </html>
+      `);
+      return;
+    }
+
+    res.redirect(result.redirectUrl);
+  });
+
+  // Create session-to-transport map for stateful connections with activity tracking
+  const sessions: Record<string, SessionInfo> = {};
+
+  // Get resource metadata URL for WWW-Authenticate header
+  const resourceMetadataUrl = `${issuerUrl}/.well-known/oauth-protected-resource`;
+
+  // Helper to update session activity
+  const touchSession = (sessionId: string): void => {
+    if (sessions[sessionId]) {
+      sessions[sessionId].lastActivity = Date.now();
+    }
+  };
+
+  // Helper to clean up a session
+  const cleanupSession = (sessionId: string): void => {
+    const session = sessions[sessionId];
+    if (session) {
+      try {
+        session.transport.close().catch((err: unknown) => {
+          console.error(
+            `[quire-mcp] Error closing session ${sessionId.slice(0, SESSION_ID_DISPLAY_LENGTH)}:`,
+            err instanceof Error ? err.message : err
+          );
+        });
+      } catch (err) {
+        console.error(
+          `[quire-mcp] Error closing session ${sessionId.slice(0, SESSION_ID_DISPLAY_LENGTH)}:`,
+          err instanceof Error ? err.message : err
+        );
+      }
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete sessions[sessionId];
+    }
+  };
+
+  // MCP POST handler
+  const mcpPostHandler: express.RequestHandler = async (req, res) => {
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+    try {
+      let transport: StreamableHTTPServerTransport;
+
+      if (sessionId && sessions[sessionId]) {
+        // Reuse existing transport and update activity
+        transport = sessions[sessionId].transport;
+        touchSession(sessionId);
+      } else if (!sessionId && isInitializeRequest(req.body)) {
+        // New initialization request
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (sid) => {
+            sessions[sid] = {
+              transport,
+              lastActivity: Date.now(),
+            };
+          },
+        });
+
+        // Clean up on close
+        transport.onclose = () => {
+          const sid = transport.sessionId;
+          if (sid && Object.hasOwn(sessions, sid)) {
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+            delete sessions[sid];
+          }
+        };
+
+        // Connect transport to a new server instance
+        // Cast required due to exactOptionalPropertyTypes incompatibility with SDK
+        const server = getServer();
+        await server.connect(transport as unknown as Transport);
+        await transport.handleRequest(req, res, req.body);
+        return;
+      } else {
+        // Invalid request
+        res.status(400).json({
+          jsonrpc: "2.0",
+          error: {
+            code: JSONRPC_ERROR_INVALID_REQUEST,
+            message: "Bad Request: No valid session ID provided",
+          },
+          id: null,
+        });
+        return;
+      }
+
+      await transport.handleRequest(req, res, req.body);
+    } catch (error) {
+      console.error("[quire-mcp] Error handling MCP request:", error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: "2.0",
+          error: {
+            code: JSONRPC_ERROR_INTERNAL,
+            message: "Internal server error",
+          },
+          id: null,
+        });
+      }
+    }
+  };
+
+  // MCP GET handler (SSE streams)
+  const mcpGetHandler: express.RequestHandler = async (req, res) => {
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+    if (!sessionId || !sessions[sessionId]) {
+      res.status(400).json({
+        jsonrpc: "2.0",
+        error: {
+          code: JSONRPC_ERROR_INVALID_REQUEST,
+          message: "Invalid or missing session ID",
+        },
+        id: null,
+      });
+      return;
+    }
+
+    touchSession(sessionId);
+    const transport = sessions[sessionId].transport;
+    await transport.handleRequest(req, res);
+  };
+
+  // MCP DELETE handler (session termination)
+  const mcpDeleteHandler: express.RequestHandler = async (req, res) => {
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+    if (!sessionId || !sessions[sessionId]) {
+      res.status(400).json({
+        jsonrpc: "2.0",
+        error: {
+          code: JSONRPC_ERROR_INVALID_REQUEST,
+          message: "Invalid or missing session ID",
+        },
+        id: null,
+      });
+      return;
+    }
+
+    try {
+      const transport = sessions[sessionId].transport;
+      await transport.handleRequest(req, res);
+    } catch (error) {
+      console.error("[quire-mcp] Error handling session termination:", error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: "2.0",
+          error: {
+            code: JSONRPC_ERROR_INTERNAL,
+            message: "Error processing session termination",
+          },
+          id: null,
+        });
+      }
+    }
+  };
+
+  // Set up routes with Bearer auth middleware
+  const authMiddleware = requireBearerAuth({
+    verifier: provider,
+    resourceMetadataUrl,
+  });
+
+  app.post("/mcp", authMiddleware, mcpPostHandler);
+  app.get("/mcp", authMiddleware, mcpGetHandler);
+  app.delete("/mcp", authMiddleware, mcpDeleteHandler);
+
+  // Start automatic token cleanup interval
+  const tokenStore = getServerTokenStore();
+  const cleanupInterval = setInterval(() => {
+    tokenStore.cleanup();
+
+    // Also clean up idle sessions
+    const now = Date.now();
+    for (const [sessionId, session] of Object.entries(sessions)) {
+      if (now - session.lastActivity > SESSION_IDLE_TIMEOUT_MS) {
+        console.error(
+          `[quire-mcp] Closing idle session ${sessionId.slice(0, SESSION_ID_DISPLAY_LENGTH)}...`
+        );
+        cleanupSession(sessionId);
+      }
+    }
+  }, TOKEN_CLEANUP_INTERVAL_MS);
+
+  // Don't keep the process alive just for cleanup
+  cleanupInterval.unref();
+
+  // Start listening
+  await new Promise<void>((resolve, reject) => {
+    const server = app.listen(port, host, () => {
+      console.error(`[quire-mcp] HTTP server listening on ${host}:${port}`);
+      console.error(
+        `[quire-mcp] OAuth metadata: ${issuerUrl}/.well-known/oauth-authorization-server`
+      );
+      console.error(`[quire-mcp] MCP endpoint: ${issuerUrl}/mcp`);
+      resolve();
+    });
+
+    server.on("error", reject);
+  });
+}
+
