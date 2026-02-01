@@ -73,24 +73,11 @@ export function registerWhoamiTool(server: McpServer): void {
         };
       }
 
-      // Format successful response
-      const user = userResult.data;
-      const summary = [
-        `**Name:** ${user.name}`,
-        user.email ? `**Email:** ${user.email}` : null,
-        user.description ? `**Bio:** ${user.description}` : null,
-        user.timezone ? `**Timezone:** ${user.timezone}` : null,
-      ]
-        .filter(Boolean)
-        .join("\n");
-
       return {
         content: [
           {
             type: "text" as const,
-            text:
-              `# Quire User Profile\n\n${summary}\n\n` +
-              `## Raw Data\n\`\`\`json\n${JSON.stringify(user, null, 2)}\n\`\`\``,
+            text: JSON.stringify(userResult.data, null, 2),
           },
         ],
       };
