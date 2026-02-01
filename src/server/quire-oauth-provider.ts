@@ -71,7 +71,9 @@ export class QuireClientsStore implements OAuthRegisteredClientsStore {
       client_id_issued_at: Math.floor(Date.now() / 1000),
     };
     this.clients.set(client.client_id, client);
-    console.error(`[quire-mcp] registerClient: new client_id=${client.client_id}`);
+    console.error(
+      `[quire-mcp] registerClient: new client_id=${client.client_id}`
+    );
     return client;
   }
 }

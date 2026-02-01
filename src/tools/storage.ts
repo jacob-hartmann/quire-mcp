@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -190,7 +193,8 @@ export function registerStorageTools(server: McpServer): void {
   server.registerTool(
     "quire.deleteStorageValue",
     {
-      description: "Delete a stored value by name. This action cannot be undone.",
+      description:
+        "Delete a stored value by name. This action cannot be undone.",
       inputSchema: z.object({
         name: z.string().describe("The storage key name to delete"),
       }),

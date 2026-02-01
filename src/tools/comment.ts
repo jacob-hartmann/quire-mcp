@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -113,9 +116,39 @@ export function registerCommentTools(server: McpServer): void {
         };
       }
 
-      const result = taskOid
-        ? await clientResult.client.listTaskComments(taskOid)
-        : await clientResult.client.listTaskComments(projectId!, taskId);
+      if (taskOid) {
+        const result = await clientResult.client.listTaskComments(taskOid);
+        if (!result.success) {
+          return formatError(result.error);
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result.data, null, 2),
+            },
+          ],
+        };
+      }
+
+      // Re-check for TS narrowing (avoids non-null assertions).
+      if (!projectId || taskId === undefined) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'taskOid' or both 'projectId' and 'taskId'",
+            },
+          ],
+        };
+      }
+
+      const result = await clientResult.client.listTaskComments(
+        projectId,
+        taskId
+      );
 
       if (!result.success) {
         return formatError(result.error);
@@ -156,9 +189,7 @@ export function registerCommentTools(server: McpServer): void {
           .number()
           .optional()
           .describe("The task ID number within the project"),
-        description: z
-          .string()
-          .describe("The comment text in markdown format"),
+        description: z.string().describe("The comment text in markdown format"),
       }),
     },
     async ({ taskOid, projectId, taskId, description }, extra) => {
@@ -188,11 +219,44 @@ export function registerCommentTools(server: McpServer): void {
         };
       }
 
-      const result = taskOid
-        ? await clientResult.client.addTaskComment(taskOid, { description })
-        : await clientResult.client.addTaskComment(projectId!, taskId!, {
-            description,
-          });
+      if (taskOid) {
+        const result = await clientResult.client.addTaskComment(taskOid, {
+          description,
+        });
+        if (!result.success) {
+          return formatError(result.error);
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result.data, null, 2),
+            },
+          ],
+        };
+      }
+
+      // Re-check for TS narrowing (avoids non-null assertions).
+      if (!projectId || taskId === undefined) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'taskOid' or both 'projectId' and 'taskId'",
+            },
+          ],
+        };
+      }
+
+      const result = await clientResult.client.addTaskComment(
+        projectId,
+        taskId,
+        {
+          description,
+        }
+      );
 
       if (!result.success) {
         return formatError(result.error);
@@ -298,14 +362,26 @@ export function registerCommentTools(server: McpServer): void {
   server.registerTool(
     "quire.listChatComments",
     {
-      description: "List all comments on a chat channel.",
+      description:
+        "List all comments on a chat channel by OID, or by project ID and chat ID.",
       inputSchema: z.object({
         chatOid: z
           .string()
-          .describe("The chat channel OID (unique identifier)"),
+          .optional()
+          .describe(
+            "The chat channel OID (unique identifier). Use this OR projectId+chatId"
+          ),
+        projectId: z
+          .string()
+          .optional()
+          .describe("The project ID or OID (required when using chatId)"),
+        chatId: z
+          .string()
+          .optional()
+          .describe("The chat ID within the project"),
       }),
     },
-    async ({ chatOid }, extra) => {
+    async ({ chatOid, projectId, chatId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -319,7 +395,36 @@ export function registerCommentTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.listChatComments(chatOid);
+      // Validate input combinations
+      if (!chatOid && (!projectId || !chatId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'chatOid' or both 'projectId' and 'chatId'",
+            },
+          ],
+        };
+      }
+
+      let result;
+      if (chatOid) {
+        result = await clientResult.client.listChatComments(chatOid);
+      } else if (projectId && chatId) {
+        result = await clientResult.client.listChatComments(projectId, chatId);
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }
@@ -339,17 +444,27 @@ export function registerCommentTools(server: McpServer): void {
   server.registerTool(
     "quire.addChatComment",
     {
-      description: "Add a comment to a chat channel.",
+      description:
+        "Add a comment to a chat channel by OID, or by project ID and chat ID.",
       inputSchema: z.object({
         chatOid: z
           .string()
-          .describe("The chat channel OID (unique identifier)"),
-        description: z
+          .optional()
+          .describe(
+            "The chat channel OID (unique identifier). Use this OR projectId+chatId"
+          ),
+        projectId: z
           .string()
-          .describe("The comment text in markdown format"),
+          .optional()
+          .describe("The project ID or OID (required when using chatId)"),
+        chatId: z
+          .string()
+          .optional()
+          .describe("The chat ID within the project"),
+        description: z.string().describe("The comment text in markdown format"),
       }),
     },
-    async ({ chatOid, description }, extra) => {
+    async ({ chatOid, projectId, chatId, description }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -363,9 +478,40 @@ export function registerCommentTools(server: McpServer): void {
         };
       }
 
-      const result = await clientResult.client.addChatComment(chatOid, {
-        description,
-      });
+      // Validate input combinations
+      if (!chatOid && (!projectId || !chatId)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Must provide either 'chatOid' or both 'projectId' and 'chatId'",
+            },
+          ],
+        };
+      }
+
+      let result;
+      if (chatOid) {
+        result = await clientResult.client.addChatComment(chatOid, {
+          description,
+        });
+      } else if (projectId && chatId) {
+        result = await clientResult.client.addChatComment(projectId, chatId, {
+          description,
+        });
+      } else {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: Invalid parameters",
+            },
+          ],
+        };
+      }
+
       if (!result.success) {
         return formatError(result.error);
       }

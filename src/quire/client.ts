@@ -587,7 +587,7 @@ export class QuireClient {
    * @see https://quire.io/dev/api/#taskSearchFolderFolderOid
    */
   async searchFolderTasks(
-    folderOid: string,
+    folderIdOrOid: string,
     keyword: string,
     options?: {
       status?: number;
@@ -609,9 +609,10 @@ export class QuireClient {
     if (options?.tagId !== undefined) {
       queryParams.set("tag", options.tagId.toString());
     }
-    return this.request<QuireTask[]>(
-      `/task/search-folder/${folderOid}?${queryParams.toString()}`
-    );
+    const endpoint = isOid(folderIdOrOid)
+      ? `/task/search/folder/${folderIdOrOid}`
+      : `/task/search/folder/id/${folderIdOrOid}`;
+    return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`);
   }
 
   /**
@@ -643,8 +644,8 @@ export class QuireClient {
       queryParams.set("tag", options.tagId.toString());
     }
     const endpoint = isOid(orgIdOrOid)
-      ? `/task/search-organization/${orgIdOrOid}`
-      : `/task/search-organization/id/${orgIdOrOid}`;
+      ? `/task/search/organization/${orgIdOrOid}`
+      : `/task/search/organization/id/${orgIdOrOid}`;
     return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`);
   }
 
@@ -816,37 +817,71 @@ export class QuireClient {
    *
    * @see https://quire.io/dev/api/#commentOid
    */
-  async deleteComment(commentOid: string): Promise<QuireResult<{ oid: string }>> {
+  async deleteComment(
+    commentOid: string
+  ): Promise<QuireResult<{ oid: string }>> {
     return this.request<{ oid: string }>(`/comment/${commentOid}`, {
       method: "DELETE",
     });
   }
 
   /**
-   * List comments on a chat channel
+   * List comments on a chat channel by OID or by project ID and chat ID
    *
    * @see https://quire.io/dev/api/#commentListChatChatOid
+   * @see https://quire.io/dev/api/#commentListIdProjectIdChatChatId
    */
-  async listChatComments(chatOid: string): Promise<QuireResult<QuireComment[]>> {
-    return this.request<QuireComment[]>(`/comment/list/chat/${chatOid}`);
+  async listChatComments(
+    chatOidOrProjectId: string,
+    chatId?: string
+  ): Promise<QuireResult<QuireComment[]>> {
+    if (chatId !== undefined) {
+      // Using project ID + chat ID
+      const endpoint = isOid(chatOidOrProjectId)
+        ? `/comment/list/${chatOidOrProjectId}/chat/${chatId}`
+        : `/comment/list/id/${chatOidOrProjectId}/chat/${chatId}`;
+      return this.request<QuireComment[]>(endpoint);
+    }
+    // Using chat OID directly
+    return this.request<QuireComment[]>(
+      `/comment/list/chat/${chatOidOrProjectId}`
+    );
   }
 
   /**
-   * Add a comment to a chat channel
+   * Add a comment to a chat channel by OID or by project ID and chat ID
    *
    * @see https://quire.io/dev/api/#commentChatChatOid
+   * @see https://quire.io/dev/api/#commentIdProjectIdChatChatId
    */
   async addChatComment(
-    chatOid: string,
-    params: CreateCommentParams
+    chatOidOrProjectId: string,
+    paramsOrChatId: CreateCommentParams | string,
+    params?: CreateCommentParams
   ): Promise<QuireResult<QuireComment>> {
+    let endpoint: string;
+    let commentParams: CreateCommentParams;
+
+    if (typeof paramsOrChatId === "string") {
+      // Using project ID + chat ID
+      const chatId = paramsOrChatId;
+      commentParams = params ?? { description: "" };
+      endpoint = isOid(chatOidOrProjectId)
+        ? `/comment/${chatOidOrProjectId}/chat/${chatId}`
+        : `/comment/id/${chatOidOrProjectId}/chat/${chatId}`;
+    } else {
+      // Using chat OID directly
+      endpoint = `/comment/chat/${chatOidOrProjectId}`;
+      commentParams = paramsOrChatId;
+    }
+
     const body: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(params)) {
+    for (const [key, value] of Object.entries(commentParams)) {
       if (value !== undefined) {
         body[key] = value;
       }
     }
-    return this.request<QuireComment>(`/comment/chat/${chatOid}`, {
+    return this.request<QuireComment>(endpoint, {
       method: "POST",
       body,
     });
@@ -1002,7 +1037,9 @@ export class QuireClient {
    *
    * @see https://quire.io/dev/api/#partnerListProjectOid
    */
-  async listPartners(projectIdOrOid: string): Promise<QuireResult<QuirePartner[]>> {
+  async listPartners(
+    projectIdOrOid: string
+  ): Promise<QuireResult<QuirePartner[]>> {
     const endpoint = isOid(projectIdOrOid)
       ? `/partner/list/${projectIdOrOid}`
       : `/partner/list/id/${projectIdOrOid}`;
@@ -1039,12 +1076,26 @@ export class QuireClient {
   }
 
   /**
-   * Get a document by OID
+   * Get a document by OID or by owner type/ID and document ID
    *
    * @see https://quire.io/dev/api/#docOid
+   * @see https://quire.io/dev/api/#docIdOwnerTypeOwnerIdId
    */
-  async getDocument(oid: string): Promise<QuireResult<QuireDocument>> {
-    return this.request<QuireDocument>(`/doc/${oid}`);
+  async getDocument(
+    oidOrOwnerType: string,
+    ownerId?: string,
+    documentId?: string
+  ): Promise<QuireResult<QuireDocument>> {
+    if (ownerId !== undefined && documentId !== undefined) {
+      // Using ownerType/ownerId/documentId
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      const endpoint = isOid(ownerId)
+        ? `/doc/${ownerType}/${ownerId}/${documentId}`
+        : `/doc/id/${ownerType}/${ownerId}/${documentId}`;
+      return this.request<QuireDocument>(endpoint);
+    }
+    // Using OID directly
+    return this.request<QuireDocument>(`/doc/${oidOrOwnerType}`);
   }
 
   /**
@@ -1063,33 +1114,70 @@ export class QuireClient {
   }
 
   /**
-   * Update a document
+   * Update a document by OID or by owner type/ID and document ID
    *
    * @see https://quire.io/dev/api/#docOid
+   * @see https://quire.io/dev/api/#docIdOwnerTypeOwnerIdId
    */
   async updateDocument(
-    oid: string,
-    params: UpdateDocumentParams
+    oidOrOwnerType: string,
+    paramsOrOwnerId: UpdateDocumentParams | string,
+    documentIdOrParams?: string | UpdateDocumentParams,
+    params?: UpdateDocumentParams
   ): Promise<QuireResult<QuireDocument>> {
+    let endpoint: string;
+    let updateParams: UpdateDocumentParams;
+
+    if (typeof paramsOrOwnerId === "string") {
+      // Using ownerType/ownerId/documentId/params
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      const ownerId = paramsOrOwnerId;
+      const documentId = documentIdOrParams as string;
+      updateParams = params ?? {};
+      endpoint = isOid(ownerId)
+        ? `/doc/${ownerType}/${ownerId}/${documentId}`
+        : `/doc/id/${ownerType}/${ownerId}/${documentId}`;
+    } else {
+      // Using OID and params
+      endpoint = `/doc/${oidOrOwnerType}`;
+      updateParams = paramsOrOwnerId;
+    }
+
     const body: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(params)) {
+    for (const [key, value] of Object.entries(updateParams)) {
       if (value !== undefined) {
         body[key] = value;
       }
     }
-    return this.request<QuireDocument>(`/doc/${oid}`, {
+    return this.request<QuireDocument>(endpoint, {
       method: "PUT",
       body,
     });
   }
 
   /**
-   * Delete a document
+   * Delete a document by OID or by owner type/ID and document ID
    *
    * @see https://quire.io/dev/api/#docOid
+   * @see https://quire.io/dev/api/#docIdOwnerTypeOwnerIdId
    */
-  async deleteDocument(oid: string): Promise<QuireResult<{ oid: string }>> {
-    return this.request<{ oid: string }>(`/doc/${oid}`, {
+  async deleteDocument(
+    oidOrOwnerType: string,
+    ownerId?: string,
+    documentId?: string
+  ): Promise<QuireResult<{ oid: string }>> {
+    let endpoint: string;
+    if (ownerId !== undefined && documentId !== undefined) {
+      // Using ownerType/ownerId/documentId
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      endpoint = isOid(ownerId)
+        ? `/doc/${ownerType}/${ownerId}/${documentId}`
+        : `/doc/id/${ownerType}/${ownerId}/${documentId}`;
+    } else {
+      // Using OID directly
+      endpoint = `/doc/${oidOrOwnerType}`;
+    }
+    return this.request<{ oid: string }>(endpoint, {
       method: "DELETE",
     });
   }
@@ -1124,12 +1212,26 @@ export class QuireClient {
   }
 
   /**
-   * Get a sublist by OID
+   * Get a sublist by OID or by owner type/ID and sublist ID
    *
    * @see https://quire.io/dev/api/#sublistOid
+   * @see https://quire.io/dev/api/#sublistIdOwnerTypeOwnerIdId
    */
-  async getSublist(oid: string): Promise<QuireResult<QuireSublist>> {
-    return this.request<QuireSublist>(`/sublist/${oid}`);
+  async getSublist(
+    oidOrOwnerType: string,
+    ownerId?: string,
+    sublistId?: string
+  ): Promise<QuireResult<QuireSublist>> {
+    if (ownerId !== undefined && sublistId !== undefined) {
+      // Using ownerType/ownerId/sublistId
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      const endpoint = isOid(ownerId)
+        ? `/sublist/${ownerType}/${ownerId}/${sublistId}`
+        : `/sublist/id/${ownerType}/${ownerId}/${sublistId}`;
+      return this.request<QuireSublist>(endpoint);
+    }
+    // Using OID directly
+    return this.request<QuireSublist>(`/sublist/${oidOrOwnerType}`);
   }
 
   /**
@@ -1148,33 +1250,70 @@ export class QuireClient {
   }
 
   /**
-   * Update a sublist
+   * Update a sublist by OID or by owner type/ID and sublist ID
    *
    * @see https://quire.io/dev/api/#sublistOid
+   * @see https://quire.io/dev/api/#sublistIdOwnerTypeOwnerIdId
    */
   async updateSublist(
-    oid: string,
-    params: UpdateSublistParams
+    oidOrOwnerType: string,
+    paramsOrOwnerId: UpdateSublistParams | string,
+    sublistIdOrParams?: string | UpdateSublistParams,
+    params?: UpdateSublistParams
   ): Promise<QuireResult<QuireSublist>> {
+    let endpoint: string;
+    let updateParams: UpdateSublistParams;
+
+    if (typeof paramsOrOwnerId === "string") {
+      // Using ownerType/ownerId/sublistId/params
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      const ownerId = paramsOrOwnerId;
+      const sublistId = sublistIdOrParams as string;
+      updateParams = params ?? {};
+      endpoint = isOid(ownerId)
+        ? `/sublist/${ownerType}/${ownerId}/${sublistId}`
+        : `/sublist/id/${ownerType}/${ownerId}/${sublistId}`;
+    } else {
+      // Using OID and params
+      endpoint = `/sublist/${oidOrOwnerType}`;
+      updateParams = paramsOrOwnerId;
+    }
+
     const body: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(params)) {
+    for (const [key, value] of Object.entries(updateParams)) {
       if (value !== undefined) {
         body[key] = value;
       }
     }
-    return this.request<QuireSublist>(`/sublist/${oid}`, {
+    return this.request<QuireSublist>(endpoint, {
       method: "PUT",
       body,
     });
   }
 
   /**
-   * Delete a sublist
+   * Delete a sublist by OID or by owner type/ID and sublist ID
    *
    * @see https://quire.io/dev/api/#sublistOid
+   * @see https://quire.io/dev/api/#sublistIdOwnerTypeOwnerIdId
    */
-  async deleteSublist(oid: string): Promise<QuireResult<{ oid: string }>> {
-    return this.request<{ oid: string }>(`/sublist/${oid}`, {
+  async deleteSublist(
+    oidOrOwnerType: string,
+    ownerId?: string,
+    sublistId?: string
+  ): Promise<QuireResult<{ oid: string }>> {
+    let endpoint: string;
+    if (ownerId !== undefined && sublistId !== undefined) {
+      // Using ownerType/ownerId/sublistId
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      endpoint = isOid(ownerId)
+        ? `/sublist/${ownerType}/${ownerId}/${sublistId}`
+        : `/sublist/id/${ownerType}/${ownerId}/${sublistId}`;
+    } else {
+      // Using OID directly
+      endpoint = `/sublist/${oidOrOwnerType}`;
+    }
+    return this.request<{ oid: string }>(endpoint, {
       method: "DELETE",
     });
   }
@@ -1209,12 +1348,26 @@ export class QuireClient {
   }
 
   /**
-   * Get a chat channel by OID
+   * Get a chat channel by OID or by owner type/ID and chat ID
    *
    * @see https://quire.io/dev/api/#chatOid
+   * @see https://quire.io/dev/api/#chatIdOwnerTypeOwnerIdId
    */
-  async getChat(oid: string): Promise<QuireResult<QuireChat>> {
-    return this.request<QuireChat>(`/chat/${oid}`);
+  async getChat(
+    oidOrOwnerType: string,
+    ownerId?: string,
+    chatId?: string
+  ): Promise<QuireResult<QuireChat>> {
+    if (ownerId !== undefined && chatId !== undefined) {
+      // Using ownerType/ownerId/chatId
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      const endpoint = isOid(ownerId)
+        ? `/chat/${ownerType}/${ownerId}/${chatId}`
+        : `/chat/id/${ownerType}/${ownerId}/${chatId}`;
+      return this.request<QuireChat>(endpoint);
+    }
+    // Using OID directly
+    return this.request<QuireChat>(`/chat/${oidOrOwnerType}`);
   }
 
   /**
@@ -1233,33 +1386,70 @@ export class QuireClient {
   }
 
   /**
-   * Update a chat channel
+   * Update a chat channel by OID or by owner type/ID and chat ID
    *
    * @see https://quire.io/dev/api/#chatOid
+   * @see https://quire.io/dev/api/#chatIdOwnerTypeOwnerIdId
    */
   async updateChat(
-    oid: string,
-    params: UpdateChatParams
+    oidOrOwnerType: string,
+    paramsOrOwnerId: UpdateChatParams | string,
+    chatIdOrParams?: string | UpdateChatParams,
+    params?: UpdateChatParams
   ): Promise<QuireResult<QuireChat>> {
+    let endpoint: string;
+    let updateParams: UpdateChatParams;
+
+    if (typeof paramsOrOwnerId === "string") {
+      // Using ownerType/ownerId/chatId/params
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      const ownerId = paramsOrOwnerId;
+      const chatId = chatIdOrParams as string;
+      updateParams = params ?? {};
+      endpoint = isOid(ownerId)
+        ? `/chat/${ownerType}/${ownerId}/${chatId}`
+        : `/chat/id/${ownerType}/${ownerId}/${chatId}`;
+    } else {
+      // Using OID and params
+      endpoint = `/chat/${oidOrOwnerType}`;
+      updateParams = paramsOrOwnerId;
+    }
+
     const body: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(params)) {
+    for (const [key, value] of Object.entries(updateParams)) {
       if (value !== undefined) {
         body[key] = value;
       }
     }
-    return this.request<QuireChat>(`/chat/${oid}`, {
+    return this.request<QuireChat>(endpoint, {
       method: "PUT",
       body,
     });
   }
 
   /**
-   * Delete a chat channel
+   * Delete a chat channel by OID or by owner type/ID and chat ID
    *
    * @see https://quire.io/dev/api/#chatOid
+   * @see https://quire.io/dev/api/#chatIdOwnerTypeOwnerIdId
    */
-  async deleteChat(oid: string): Promise<QuireResult<{ oid: string }>> {
-    return this.request<{ oid: string }>(`/chat/${oid}`, {
+  async deleteChat(
+    oidOrOwnerType: string,
+    ownerId?: string,
+    chatId?: string
+  ): Promise<QuireResult<{ oid: string }>> {
+    let endpoint: string;
+    if (ownerId !== undefined && chatId !== undefined) {
+      // Using ownerType/ownerId/chatId
+      const ownerType = oidOrOwnerType as "organization" | "project";
+      endpoint = isOid(ownerId)
+        ? `/chat/${ownerType}/${ownerId}/${chatId}`
+        : `/chat/id/${ownerType}/${ownerId}/${chatId}`;
+    } else {
+      // Using OID directly
+      endpoint = `/chat/${oidOrOwnerType}`;
+    }
+    return this.request<{ oid: string }>(endpoint, {
       method: "DELETE",
     });
   }
@@ -1274,7 +1464,9 @@ export class QuireClient {
    * @see https://quire.io/dev/api/#storageName
    */
   async getStorageValue(name: string): Promise<QuireResult<QuireStorageEntry>> {
-    return this.request<QuireStorageEntry>(`/storage/${encodeURIComponent(name)}`);
+    return this.request<QuireStorageEntry>(
+      `/storage/${encodeURIComponent(name)}`
+    );
   }
 
   /**
@@ -1282,8 +1474,12 @@ export class QuireClient {
    *
    * @see https://quire.io/dev/api/#storageListPrefix
    */
-  async listStorageEntries(prefix: string): Promise<QuireResult<QuireStorageEntry[]>> {
-    return this.request<QuireStorageEntry[]>(`/storage/list/${encodeURIComponent(prefix)}`);
+  async listStorageEntries(
+    prefix: string
+  ): Promise<QuireResult<QuireStorageEntry[]>> {
+    return this.request<QuireStorageEntry[]>(
+      `/storage/list/${encodeURIComponent(prefix)}`
+    );
   }
 
   /**
@@ -1295,10 +1491,13 @@ export class QuireClient {
     name: string,
     value: unknown
   ): Promise<QuireResult<QuireStorageEntry>> {
-    return this.request<QuireStorageEntry>(`/storage/${encodeURIComponent(name)}`, {
-      method: "PUT",
-      body: { value },
-    });
+    return this.request<QuireStorageEntry>(
+      `/storage/${encodeURIComponent(name)}`,
+      {
+        method: "PUT",
+        body: { value },
+      }
+    );
   }
 
   /**
@@ -1306,10 +1505,15 @@ export class QuireClient {
    *
    * @see https://quire.io/dev/api/#storageName
    */
-  async deleteStorageValue(name: string): Promise<QuireResult<{ name: string }>> {
-    return this.request<{ name: string }>(`/storage/${encodeURIComponent(name)}`, {
-      method: "DELETE",
-    });
+  async deleteStorageValue(
+    name: string
+  ): Promise<QuireResult<{ name: string }>> {
+    return this.request<{ name: string }>(
+      `/storage/${encodeURIComponent(name)}`,
+      {
+        method: "DELETE",
+      }
+    );
   }
 
   // =====================
@@ -1382,7 +1586,12 @@ export class QuireClient {
 
       return {
         success: false,
-        error: new QuireClientError(errorMessage, code, response.status, retryable),
+        error: new QuireClientError(
+          errorMessage,
+          code,
+          response.status,
+          retryable
+        ),
       };
     } catch (error) {
       if (error instanceof Error) {
@@ -1451,7 +1660,12 @@ export class QuireClient {
 
       return {
         success: false,
-        error: new QuireClientError(errorMessage, code, response.status, retryable),
+        error: new QuireClientError(
+          errorMessage,
+          code,
+          response.status,
+          retryable
+        ),
       };
     } catch (error) {
       if (error instanceof Error) {

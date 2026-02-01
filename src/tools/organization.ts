@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -194,7 +197,8 @@ export function registerOrganizationTools(server: McpServer): void {
       } = {};
       if (followers !== undefined) params.followers = followers;
       if (addFollowers !== undefined) params.addFollowers = addFollowers;
-      if (removeFollowers !== undefined) params.removeFollowers = removeFollowers;
+      if (removeFollowers !== undefined)
+        params.removeFollowers = removeFollowers;
 
       const result = await clientResult.client.updateOrganization(id, params);
       if (!result.success) {

@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -107,8 +110,7 @@ export function registerTagTools(server: McpServer): void {
   server.registerTool(
     "quire.getTag",
     {
-      description:
-        "Get detailed information about a specific tag by its OID.",
+      description: "Get detailed information about a specific tag by its OID.",
       inputSchema: z.object({
         oid: z.string().describe("The tag OID (unique identifier)"),
       }),

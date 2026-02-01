@@ -22,7 +22,10 @@ interface ToolErrorResponse {
 /**
  * Format error response for MCP tools
  */
-function formatError(error: { code: string; message: string }): ToolErrorResponse {
+function formatError(error: {
+  code: string;
+  message: string;
+}): ToolErrorResponse {
   let errorMessage = error.message;
 
   switch (error.code) {
@@ -169,10 +172,7 @@ export function registerProjectTools(server: McpServer): void {
           .string()
           .optional()
           .describe("New description for the project"),
-        icon: z
-          .string()
-          .optional()
-          .describe("Icon identifier for the project"),
+        icon: z.string().optional().describe("Icon identifier for the project"),
         iconColor: z
           .string()
           .optional()
@@ -240,7 +240,8 @@ export function registerProjectTools(server: McpServer): void {
       if (archived !== undefined) params.archived = archived;
       if (followers !== undefined) params.followers = followers;
       if (addFollowers !== undefined) params.addFollowers = addFollowers;
-      if (removeFollowers !== undefined) params.removeFollowers = removeFollowers;
+      if (removeFollowers !== undefined)
+        params.removeFollowers = removeFollowers;
 
       const result = await clientResult.client.updateProject(id, params);
       if (!result.success) {
