@@ -619,4 +619,347 @@ export function registerTaskTools(server: McpServer): void {
       };
     }
   );
+
+  // Create Task After
+  server.registerTool(
+    "quire.createTaskAfter",
+    {
+      description:
+        "Create a new task immediately after a specified task. " +
+        "The new task will be at the same level as the reference task.",
+      inputSchema: z.object({
+        taskOid: z
+          .string()
+          .describe("The OID of the task to insert after"),
+        name: z.string().describe("The task name/title (required)"),
+        description: z
+          .string()
+          .optional()
+          .describe("Task description in markdown format"),
+        priority: z
+          .number()
+          .min(-1)
+          .max(2)
+          .optional()
+          .describe("Priority: -1 (low), 0 (medium), 1 (high), 2 (urgent)"),
+        status: z
+          .number()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe("Status: 0 (to-do) to 100 (complete)"),
+        due: z
+          .string()
+          .optional()
+          .describe("Due date in ISO 8601 format (e.g., '2024-12-31')"),
+        start: z
+          .string()
+          .optional()
+          .describe("Start date in ISO 8601 format"),
+        assignees: z
+          .array(z.string())
+          .optional()
+          .describe("Array of user IDs to assign to this task"),
+        tags: z.array(z.number()).optional().describe("Array of tag IDs"),
+      }),
+    },
+    async (
+      { taskOid, name, description, priority, status, due, start, assignees, tags },
+      extra
+    ) => {
+      const clientResult = await getQuireClient(extra);
+      if (!clientResult.success) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: `Authentication Error: ${clientResult.error}`,
+            },
+          ],
+        };
+      }
+
+      const params: {
+        name: string;
+        description?: string;
+        priority?: number;
+        status?: number;
+        due?: string;
+        start?: string;
+        assignees?: string[];
+        tags?: number[];
+      } = { name };
+      if (description !== undefined) params.description = description;
+      if (priority !== undefined) params.priority = priority;
+      if (status !== undefined) params.status = status;
+      if (due !== undefined) params.due = due;
+      if (start !== undefined) params.start = start;
+      if (assignees !== undefined) params.assignees = assignees;
+      if (tags !== undefined) params.tags = tags;
+
+      const result = await clientResult.client.createTaskAfter(taskOid, params);
+      if (!result.success) {
+        return formatError(result.error);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(result.data, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  // Create Task Before
+  server.registerTool(
+    "quire.createTaskBefore",
+    {
+      description:
+        "Create a new task immediately before a specified task. " +
+        "The new task will be at the same level as the reference task.",
+      inputSchema: z.object({
+        taskOid: z
+          .string()
+          .describe("The OID of the task to insert before"),
+        name: z.string().describe("The task name/title (required)"),
+        description: z
+          .string()
+          .optional()
+          .describe("Task description in markdown format"),
+        priority: z
+          .number()
+          .min(-1)
+          .max(2)
+          .optional()
+          .describe("Priority: -1 (low), 0 (medium), 1 (high), 2 (urgent)"),
+        status: z
+          .number()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe("Status: 0 (to-do) to 100 (complete)"),
+        due: z
+          .string()
+          .optional()
+          .describe("Due date in ISO 8601 format (e.g., '2024-12-31')"),
+        start: z
+          .string()
+          .optional()
+          .describe("Start date in ISO 8601 format"),
+        assignees: z
+          .array(z.string())
+          .optional()
+          .describe("Array of user IDs to assign to this task"),
+        tags: z.array(z.number()).optional().describe("Array of tag IDs"),
+      }),
+    },
+    async (
+      { taskOid, name, description, priority, status, due, start, assignees, tags },
+      extra
+    ) => {
+      const clientResult = await getQuireClient(extra);
+      if (!clientResult.success) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: `Authentication Error: ${clientResult.error}`,
+            },
+          ],
+        };
+      }
+
+      const params: {
+        name: string;
+        description?: string;
+        priority?: number;
+        status?: number;
+        due?: string;
+        start?: string;
+        assignees?: string[];
+        tags?: number[];
+      } = { name };
+      if (description !== undefined) params.description = description;
+      if (priority !== undefined) params.priority = priority;
+      if (status !== undefined) params.status = status;
+      if (due !== undefined) params.due = due;
+      if (start !== undefined) params.start = start;
+      if (assignees !== undefined) params.assignees = assignees;
+      if (tags !== undefined) params.tags = tags;
+
+      const result = await clientResult.client.createTaskBefore(taskOid, params);
+      if (!result.success) {
+        return formatError(result.error);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(result.data, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  // Search Folder Tasks
+  server.registerTool(
+    "quire.searchFolderTasks",
+    {
+      description:
+        "Search for tasks within a specific folder by keyword and optional filters.",
+      inputSchema: z.object({
+        folderOid: z
+          .string()
+          .describe("The folder OID to search in"),
+        keyword: z
+          .string()
+          .describe("Search keyword to match against task names and descriptions"),
+        status: z
+          .number()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe("Filter by status: 0 (to-do) to 100 (complete)"),
+        priority: z
+          .number()
+          .min(-1)
+          .max(2)
+          .optional()
+          .describe("Filter by priority: -1 (low), 0 (medium), 1 (high), 2 (urgent)"),
+        assigneeId: z
+          .string()
+          .optional()
+          .describe("Filter by assignee user ID"),
+        tagId: z.number().optional().describe("Filter by tag ID"),
+      }),
+    },
+    async ({ folderOid, keyword, status, priority, assigneeId, tagId }, extra) => {
+      const clientResult = await getQuireClient(extra);
+      if (!clientResult.success) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: `Authentication Error: ${clientResult.error}`,
+            },
+          ],
+        };
+      }
+
+      const options: {
+        status?: number;
+        priority?: number;
+        assigneeId?: string;
+        tagId?: number;
+      } = {};
+      if (status !== undefined) options.status = status;
+      if (priority !== undefined) options.priority = priority;
+      if (assigneeId !== undefined) options.assigneeId = assigneeId;
+      if (tagId !== undefined) options.tagId = tagId;
+
+      const result = await clientResult.client.searchFolderTasks(
+        folderOid,
+        keyword,
+        options
+      );
+      if (!result.success) {
+        return formatError(result.error);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(result.data, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  // Search Organization Tasks
+  server.registerTool(
+    "quire.searchOrganizationTasks",
+    {
+      description:
+        "Search for tasks across an entire organization by keyword and optional filters. " +
+        "This searches all projects within the organization.",
+      inputSchema: z.object({
+        organizationId: z
+          .string()
+          .describe("The organization ID (e.g., 'my-org') or OID to search in"),
+        keyword: z
+          .string()
+          .describe("Search keyword to match against task names and descriptions"),
+        status: z
+          .number()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe("Filter by status: 0 (to-do) to 100 (complete)"),
+        priority: z
+          .number()
+          .min(-1)
+          .max(2)
+          .optional()
+          .describe("Filter by priority: -1 (low), 0 (medium), 1 (high), 2 (urgent)"),
+        assigneeId: z
+          .string()
+          .optional()
+          .describe("Filter by assignee user ID"),
+        tagId: z.number().optional().describe("Filter by tag ID"),
+      }),
+    },
+    async ({ organizationId, keyword, status, priority, assigneeId, tagId }, extra) => {
+      const clientResult = await getQuireClient(extra);
+      if (!clientResult.success) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: `Authentication Error: ${clientResult.error}`,
+            },
+          ],
+        };
+      }
+
+      const options: {
+        status?: number;
+        priority?: number;
+        assigneeId?: string;
+        tagId?: number;
+      } = {};
+      if (status !== undefined) options.status = status;
+      if (priority !== undefined) options.priority = priority;
+      if (assigneeId !== undefined) options.assigneeId = assigneeId;
+      if (tagId !== undefined) options.tagId = tagId;
+
+      const result = await clientResult.client.searchOrganizationTasks(
+        organizationId,
+        keyword,
+        options
+      );
+      if (!result.success) {
+        return formatError(result.error);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(result.data, null, 2),
+          },
+        ],
+      };
+    }
+  );
 }

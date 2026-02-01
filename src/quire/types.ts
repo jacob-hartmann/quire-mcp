@@ -322,3 +322,183 @@ export interface UpdateStatusParams {
   name?: string;
   color?: string;
 }
+
+// =====================
+// Partner Types
+// =====================
+
+/**
+ * External team (partner) returned by the Quire API
+ * @see https://quire.io/dev/api/#partner
+ */
+export interface QuirePartner {
+  oid: string;
+  id: string;
+  name: string;
+  nameText: string;
+  description?: string;
+  url?: string;
+  image?: string;
+}
+
+// =====================
+// Document Types
+// =====================
+
+/**
+ * Document returned by the Quire API
+ * @see https://quire.io/dev/api/#doc
+ */
+export interface QuireDocument {
+  oid: string;
+  id: string;
+  name: string;
+  nameText: string;
+  content?: string;
+  contentText?: string;
+  url?: string;
+  createdAt?: string;
+  createdBy?: QuireSimpleUser;
+}
+
+/**
+ * Document creation parameters
+ */
+export interface CreateDocumentParams {
+  name: string;
+  content?: string;
+}
+
+/**
+ * Document update parameters
+ */
+export interface UpdateDocumentParams {
+  name?: string;
+  content?: string;
+}
+
+// =====================
+// Sublist Types
+// =====================
+
+/**
+ * Sublist returned by the Quire API
+ * @see https://quire.io/dev/api/#sublist
+ */
+export interface QuireSublist {
+  oid: string;
+  id: string;
+  name: string;
+  nameText: string;
+  description?: string;
+  taskCount?: number;
+  createdAt?: string;
+  createdBy?: QuireSimpleUser;
+}
+
+/**
+ * Sublist creation parameters
+ */
+export interface CreateSublistParams {
+  name: string;
+  description?: string;
+}
+
+/**
+ * Sublist update parameters
+ */
+export interface UpdateSublistParams {
+  name?: string;
+  description?: string;
+}
+
+// =====================
+// Chat Types
+// =====================
+
+/**
+ * Chat channel returned by the Quire API
+ * @see https://quire.io/dev/api/#chat
+ */
+export interface QuireChat {
+  oid: string;
+  id: string;
+  name: string;
+  nameText: string;
+  description?: string;
+  messageCount?: number;
+  createdAt?: string;
+  members?: QuireSimpleUser[];
+}
+
+/**
+ * Chat channel creation parameters
+ */
+export interface CreateChatParams {
+  name: string;
+  description?: string;
+  members?: string[];
+}
+
+/**
+ * Chat channel update parameters
+ */
+export interface UpdateChatParams {
+  name?: string;
+  description?: string;
+  members?: string[];
+  addMembers?: string[];
+  removeMembers?: string[];
+}
+
+// =====================
+// Storage Types
+// =====================
+
+/**
+ * Key-value storage entry returned by the Quire API
+ * @see https://quire.io/dev/api/#storage
+ */
+export interface QuireStorageEntry {
+  name: string;
+  value: unknown;
+}
+
+/**
+ * Storage put parameters
+ */
+export interface PutStorageParams {
+  value: unknown;
+}
+
+// =====================
+// Notification Types
+// =====================
+
+/**
+ * Parameters for sending a notification
+ * @see https://quire.io/dev/api/#notification
+ */
+export interface SendNotificationParams {
+  userIds: string[];
+  message: string;
+  url?: string;
+}
+
+// =====================
+// Attachment Types
+// =====================
+
+/**
+ * Attachment returned by the Quire API
+ * @see https://quire.io/dev/api/#attachment
+ */
+export interface QuireAttachment {
+  oid: string;
+  name: string;
+  url: string;
+  size: number;
+  mimeType: string;
+  createdAt: string;
+  createdBy: QuireSimpleUser;
+}
