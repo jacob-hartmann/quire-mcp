@@ -293,4 +293,91 @@ export function registerCommentTools(server: McpServer): void {
       };
     }
   );
+
+  // List Chat Comments
+  server.registerTool(
+    "quire.listChatComments",
+    {
+      description: "List all comments on a chat channel.",
+      inputSchema: z.object({
+        chatOid: z
+          .string()
+          .describe("The chat channel OID (unique identifier)"),
+      }),
+    },
+    async ({ chatOid }, extra) => {
+      const clientResult = await getQuireClient(extra);
+      if (!clientResult.success) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: `Authentication Error: ${clientResult.error}`,
+            },
+          ],
+        };
+      }
+
+      const result = await clientResult.client.listChatComments(chatOid);
+      if (!result.success) {
+        return formatError(result.error);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(result.data, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  // Add Chat Comment
+  server.registerTool(
+    "quire.addChatComment",
+    {
+      description: "Add a comment to a chat channel.",
+      inputSchema: z.object({
+        chatOid: z
+          .string()
+          .describe("The chat channel OID (unique identifier)"),
+        description: z
+          .string()
+          .describe("The comment text in markdown format"),
+      }),
+    },
+    async ({ chatOid, description }, extra) => {
+      const clientResult = await getQuireClient(extra);
+      if (!clientResult.success) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: `Authentication Error: ${clientResult.error}`,
+            },
+          ],
+        };
+      }
+
+      const result = await clientResult.client.addChatComment(chatOid, {
+        description,
+      });
+      if (!result.success) {
+        return formatError(result.error);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(result.data, null, 2),
+          },
+        ],
+      };
+    }
+  );
 }

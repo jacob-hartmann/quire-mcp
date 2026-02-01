@@ -22,6 +22,12 @@ import type {
   QuireTag,
   QuireComment,
   QuireStatus,
+  QuirePartner,
+  QuireDocument,
+  QuireSublist,
+  QuireChat,
+  QuireStorageEntry,
+  QuireAttachment,
   CreateTaskParams,
   UpdateTaskParams,
   UpdateOrganizationParams,
@@ -32,6 +38,13 @@ import type {
   UpdateCommentParams,
   CreateStatusParams,
   UpdateStatusParams,
+  CreateDocumentParams,
+  UpdateDocumentParams,
+  CreateSublistParams,
+  UpdateSublistParams,
+  CreateChatParams,
+  UpdateChatParams,
+  SendNotificationParams,
 } from "./types.js";
 import { QuireClientError } from "./types.js";
 
@@ -526,6 +539,115 @@ export class QuireClient {
     return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`);
   }
 
+  /**
+   * Create a task after a specified task
+   *
+   * @see https://quire.io/dev/api/#taskAfterOid
+   */
+  async createTaskAfter(
+    taskOid: string,
+    params: CreateTaskParams
+  ): Promise<QuireResult<QuireTask>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    return this.request<QuireTask>(`/task/after/${taskOid}`, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Create a task before a specified task
+   *
+   * @see https://quire.io/dev/api/#taskBeforeOid
+   */
+  async createTaskBefore(
+    taskOid: string,
+    params: CreateTaskParams
+  ): Promise<QuireResult<QuireTask>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    return this.request<QuireTask>(`/task/before/${taskOid}`, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Search for tasks in a folder
+   *
+   * @see https://quire.io/dev/api/#taskSearchFolderFolderOid
+   */
+  async searchFolderTasks(
+    folderOid: string,
+    keyword: string,
+    options?: {
+      status?: number;
+      priority?: number;
+      assigneeId?: string;
+      tagId?: number;
+    }
+  ): Promise<QuireResult<QuireTask[]>> {
+    const queryParams = new URLSearchParams({ keyword });
+    if (options?.status !== undefined) {
+      queryParams.set("status", options.status.toString());
+    }
+    if (options?.priority !== undefined) {
+      queryParams.set("priority", options.priority.toString());
+    }
+    if (options?.assigneeId) {
+      queryParams.set("assignee", options.assigneeId);
+    }
+    if (options?.tagId !== undefined) {
+      queryParams.set("tag", options.tagId.toString());
+    }
+    return this.request<QuireTask[]>(
+      `/task/search-folder/${folderOid}?${queryParams.toString()}`
+    );
+  }
+
+  /**
+   * Search for tasks across an organization
+   *
+   * @see https://quire.io/dev/api/#taskSearchOrganizationOrgOid
+   */
+  async searchOrganizationTasks(
+    orgIdOrOid: string,
+    keyword: string,
+    options?: {
+      status?: number;
+      priority?: number;
+      assigneeId?: string;
+      tagId?: number;
+    }
+  ): Promise<QuireResult<QuireTask[]>> {
+    const queryParams = new URLSearchParams({ keyword });
+    if (options?.status !== undefined) {
+      queryParams.set("status", options.status.toString());
+    }
+    if (options?.priority !== undefined) {
+      queryParams.set("priority", options.priority.toString());
+    }
+    if (options?.assigneeId) {
+      queryParams.set("assignee", options.assigneeId);
+    }
+    if (options?.tagId !== undefined) {
+      queryParams.set("tag", options.tagId.toString());
+    }
+    const endpoint = isOid(orgIdOrOid)
+      ? `/task/search-organization/${orgIdOrOid}`
+      : `/task/search-organization/id/${orgIdOrOid}`;
+    return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`);
+  }
+
   // =====================
   // Tag Methods
   // =====================
@@ -700,6 +822,36 @@ export class QuireClient {
     });
   }
 
+  /**
+   * List comments on a chat channel
+   *
+   * @see https://quire.io/dev/api/#commentListChatChatOid
+   */
+  async listChatComments(chatOid: string): Promise<QuireResult<QuireComment[]>> {
+    return this.request<QuireComment[]>(`/comment/list/chat/${chatOid}`);
+  }
+
+  /**
+   * Add a comment to a chat channel
+   *
+   * @see https://quire.io/dev/api/#commentChatChatOid
+   */
+  async addChatComment(
+    chatOid: string,
+    params: CreateCommentParams
+  ): Promise<QuireResult<QuireComment>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    return this.request<QuireComment>(`/comment/chat/${chatOid}`, {
+      method: "POST",
+      body,
+    });
+  }
+
   // =====================
   // User Methods
   // =====================
@@ -830,6 +982,500 @@ export class QuireClient {
     return this.request<{ value: number }>(endpoint, {
       method: "DELETE",
     });
+  }
+
+  // =====================
+  // Partner Methods
+  // =====================
+
+  /**
+   * Get an external team (partner) by OID
+   *
+   * @see https://quire.io/dev/api/#partnerOid
+   */
+  async getPartner(oid: string): Promise<QuireResult<QuirePartner>> {
+    return this.request<QuirePartner>(`/partner/${oid}`);
+  }
+
+  /**
+   * List external teams (partners) in a project
+   *
+   * @see https://quire.io/dev/api/#partnerListProjectOid
+   */
+  async listPartners(projectIdOrOid: string): Promise<QuireResult<QuirePartner[]>> {
+    const endpoint = isOid(projectIdOrOid)
+      ? `/partner/list/${projectIdOrOid}`
+      : `/partner/list/id/${projectIdOrOid}`;
+    return this.request<QuirePartner[]>(endpoint);
+  }
+
+  // =====================
+  // Document Methods
+  // =====================
+
+  /**
+   * Create a document
+   *
+   * @see https://quire.io/dev/api/#docOwnerTypeOwnerOid
+   */
+  async createDocument(
+    ownerType: "organization" | "project",
+    ownerIdOrOid: string,
+    params: CreateDocumentParams
+  ): Promise<QuireResult<QuireDocument>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    const endpoint = isOid(ownerIdOrOid)
+      ? `/doc/${ownerType}/${ownerIdOrOid}`
+      : `/doc/${ownerType}/id/${ownerIdOrOid}`;
+    return this.request<QuireDocument>(endpoint, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Get a document by OID
+   *
+   * @see https://quire.io/dev/api/#docOid
+   */
+  async getDocument(oid: string): Promise<QuireResult<QuireDocument>> {
+    return this.request<QuireDocument>(`/doc/${oid}`);
+  }
+
+  /**
+   * List documents for an owner
+   *
+   * @see https://quire.io/dev/api/#docListOwnerTypeOwnerOid
+   */
+  async listDocuments(
+    ownerType: "organization" | "project",
+    ownerIdOrOid: string
+  ): Promise<QuireResult<QuireDocument[]>> {
+    const endpoint = isOid(ownerIdOrOid)
+      ? `/doc/list/${ownerType}/${ownerIdOrOid}`
+      : `/doc/list/${ownerType}/id/${ownerIdOrOid}`;
+    return this.request<QuireDocument[]>(endpoint);
+  }
+
+  /**
+   * Update a document
+   *
+   * @see https://quire.io/dev/api/#docOid
+   */
+  async updateDocument(
+    oid: string,
+    params: UpdateDocumentParams
+  ): Promise<QuireResult<QuireDocument>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    return this.request<QuireDocument>(`/doc/${oid}`, {
+      method: "PUT",
+      body,
+    });
+  }
+
+  /**
+   * Delete a document
+   *
+   * @see https://quire.io/dev/api/#docOid
+   */
+  async deleteDocument(oid: string): Promise<QuireResult<{ oid: string }>> {
+    return this.request<{ oid: string }>(`/doc/${oid}`, {
+      method: "DELETE",
+    });
+  }
+
+  // =====================
+  // Sublist Methods
+  // =====================
+
+  /**
+   * Create a sublist
+   *
+   * @see https://quire.io/dev/api/#sublistOwnerTypeOwnerOid
+   */
+  async createSublist(
+    ownerType: "organization" | "project",
+    ownerIdOrOid: string,
+    params: CreateSublistParams
+  ): Promise<QuireResult<QuireSublist>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    const endpoint = isOid(ownerIdOrOid)
+      ? `/sublist/${ownerType}/${ownerIdOrOid}`
+      : `/sublist/${ownerType}/id/${ownerIdOrOid}`;
+    return this.request<QuireSublist>(endpoint, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Get a sublist by OID
+   *
+   * @see https://quire.io/dev/api/#sublistOid
+   */
+  async getSublist(oid: string): Promise<QuireResult<QuireSublist>> {
+    return this.request<QuireSublist>(`/sublist/${oid}`);
+  }
+
+  /**
+   * List sublists for an owner
+   *
+   * @see https://quire.io/dev/api/#sublistListOwnerTypeOwnerOid
+   */
+  async listSublists(
+    ownerType: "organization" | "project",
+    ownerIdOrOid: string
+  ): Promise<QuireResult<QuireSublist[]>> {
+    const endpoint = isOid(ownerIdOrOid)
+      ? `/sublist/list/${ownerType}/${ownerIdOrOid}`
+      : `/sublist/list/${ownerType}/id/${ownerIdOrOid}`;
+    return this.request<QuireSublist[]>(endpoint);
+  }
+
+  /**
+   * Update a sublist
+   *
+   * @see https://quire.io/dev/api/#sublistOid
+   */
+  async updateSublist(
+    oid: string,
+    params: UpdateSublistParams
+  ): Promise<QuireResult<QuireSublist>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    return this.request<QuireSublist>(`/sublist/${oid}`, {
+      method: "PUT",
+      body,
+    });
+  }
+
+  /**
+   * Delete a sublist
+   *
+   * @see https://quire.io/dev/api/#sublistOid
+   */
+  async deleteSublist(oid: string): Promise<QuireResult<{ oid: string }>> {
+    return this.request<{ oid: string }>(`/sublist/${oid}`, {
+      method: "DELETE",
+    });
+  }
+
+  // =====================
+  // Chat Methods
+  // =====================
+
+  /**
+   * Create a chat channel
+   *
+   * @see https://quire.io/dev/api/#chatOwnerTypeOwnerOid
+   */
+  async createChat(
+    ownerType: "organization" | "project",
+    ownerIdOrOid: string,
+    params: CreateChatParams
+  ): Promise<QuireResult<QuireChat>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    const endpoint = isOid(ownerIdOrOid)
+      ? `/chat/${ownerType}/${ownerIdOrOid}`
+      : `/chat/${ownerType}/id/${ownerIdOrOid}`;
+    return this.request<QuireChat>(endpoint, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /**
+   * Get a chat channel by OID
+   *
+   * @see https://quire.io/dev/api/#chatOid
+   */
+  async getChat(oid: string): Promise<QuireResult<QuireChat>> {
+    return this.request<QuireChat>(`/chat/${oid}`);
+  }
+
+  /**
+   * List chat channels for an owner
+   *
+   * @see https://quire.io/dev/api/#chatListOwnerTypeOwnerOid
+   */
+  async listChats(
+    ownerType: "organization" | "project",
+    ownerIdOrOid: string
+  ): Promise<QuireResult<QuireChat[]>> {
+    const endpoint = isOid(ownerIdOrOid)
+      ? `/chat/list/${ownerType}/${ownerIdOrOid}`
+      : `/chat/list/${ownerType}/id/${ownerIdOrOid}`;
+    return this.request<QuireChat[]>(endpoint);
+  }
+
+  /**
+   * Update a chat channel
+   *
+   * @see https://quire.io/dev/api/#chatOid
+   */
+  async updateChat(
+    oid: string,
+    params: UpdateChatParams
+  ): Promise<QuireResult<QuireChat>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    return this.request<QuireChat>(`/chat/${oid}`, {
+      method: "PUT",
+      body,
+    });
+  }
+
+  /**
+   * Delete a chat channel
+   *
+   * @see https://quire.io/dev/api/#chatOid
+   */
+  async deleteChat(oid: string): Promise<QuireResult<{ oid: string }>> {
+    return this.request<{ oid: string }>(`/chat/${oid}`, {
+      method: "DELETE",
+    });
+  }
+
+  // =====================
+  // Storage Methods
+  // =====================
+
+  /**
+   * Get a stored value by name
+   *
+   * @see https://quire.io/dev/api/#storageName
+   */
+  async getStorageValue(name: string): Promise<QuireResult<QuireStorageEntry>> {
+    return this.request<QuireStorageEntry>(`/storage/${encodeURIComponent(name)}`);
+  }
+
+  /**
+   * List storage entries by prefix
+   *
+   * @see https://quire.io/dev/api/#storageListPrefix
+   */
+  async listStorageEntries(prefix: string): Promise<QuireResult<QuireStorageEntry[]>> {
+    return this.request<QuireStorageEntry[]>(`/storage/list/${encodeURIComponent(prefix)}`);
+  }
+
+  /**
+   * Store a value
+   *
+   * @see https://quire.io/dev/api/#storageName
+   */
+  async putStorageValue(
+    name: string,
+    value: unknown
+  ): Promise<QuireResult<QuireStorageEntry>> {
+    return this.request<QuireStorageEntry>(`/storage/${encodeURIComponent(name)}`, {
+      method: "PUT",
+      body: { value },
+    });
+  }
+
+  /**
+   * Delete a stored value
+   *
+   * @see https://quire.io/dev/api/#storageName
+   */
+  async deleteStorageValue(name: string): Promise<QuireResult<{ name: string }>> {
+    return this.request<{ name: string }>(`/storage/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    });
+  }
+
+  // =====================
+  // Notification Methods
+  // =====================
+
+  /**
+   * Send a notification to users
+   *
+   * @see https://quire.io/dev/api/#notification
+   */
+  async sendNotification(
+    params: SendNotificationParams
+  ): Promise<QuireResult<{ success: boolean }>> {
+    const body: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    return this.request<{ success: boolean }>("/notification", {
+      method: "POST",
+      body,
+    });
+  }
+
+  // =====================
+  // Attachment Methods
+  // =====================
+
+  /**
+   * Upload a file attachment to a task
+   *
+   * @see https://quire.io/dev/api/#taskAttachTaskOidFilename
+   */
+  async uploadTaskAttachment(
+    taskOid: string,
+    filename: string,
+    content: string,
+    mimeType = "application/octet-stream"
+  ): Promise<QuireResult<QuireAttachment>> {
+    const url = `${QUIRE_API_BASE_URL}/task/attach/${taskOid}/${encodeURIComponent(filename)}`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": mimeType,
+        },
+        body: content,
+        signal: createTimeoutSignal(this.timeoutMs),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as QuireAttachment;
+        return { success: true, data };
+      }
+
+      const { code, retryable } = parseErrorCode(response.status);
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorBody = (await response.json()) as { message?: string };
+        if (errorBody.message) {
+          errorMessage = errorBody.message;
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+
+      return {
+        success: false,
+        error: new QuireClientError(errorMessage, code, response.status, retryable),
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === "TimeoutError" || error.name === "AbortError") {
+          return {
+            success: false,
+            error: new QuireClientError(
+              `Request timed out after ${this.timeoutMs}ms`,
+              "TIMEOUT",
+              undefined,
+              true
+            ),
+          };
+        }
+        return {
+          success: false,
+          error: new QuireClientError(error.message, "NETWORK_ERROR"),
+        };
+      }
+      return {
+        success: false,
+        error: new QuireClientError("Unknown error occurred", "UNKNOWN"),
+      };
+    }
+  }
+
+  /**
+   * Upload a file attachment to a comment
+   *
+   * @see https://quire.io/dev/api/#commentAttachCommentOidFilename
+   */
+  async uploadCommentAttachment(
+    commentOid: string,
+    filename: string,
+    content: string,
+    mimeType = "application/octet-stream"
+  ): Promise<QuireResult<QuireAttachment>> {
+    const url = `${QUIRE_API_BASE_URL}/comment/attach/${commentOid}/${encodeURIComponent(filename)}`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": mimeType,
+        },
+        body: content,
+        signal: createTimeoutSignal(this.timeoutMs),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as QuireAttachment;
+        return { success: true, data };
+      }
+
+      const { code, retryable } = parseErrorCode(response.status);
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorBody = (await response.json()) as { message?: string };
+        if (errorBody.message) {
+          errorMessage = errorBody.message;
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+
+      return {
+        success: false,
+        error: new QuireClientError(errorMessage, code, response.status, retryable),
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === "TimeoutError" || error.name === "AbortError") {
+          return {
+            success: false,
+            error: new QuireClientError(
+              `Request timed out after ${this.timeoutMs}ms`,
+              "TIMEOUT",
+              undefined,
+              true
+            ),
+          };
+        }
+        return {
+          success: false,
+          error: new QuireClientError(error.message, "NETWORK_ERROR"),
+        };
+      }
+      return {
+        success: false,
+        error: new QuireClientError("Unknown error occurred", "UNKNOWN"),
+      };
+    }
   }
 }
 
