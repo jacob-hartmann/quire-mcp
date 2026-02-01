@@ -1,5 +1,14 @@
 # Quire MCP Server
 
+[![CI](https://github.com/jacob-hartmann/quire-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jacob-hartmann/quire-mcp/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/jacob-hartmann/quire-mcp/badge.svg?branch=expanded-tools)](https://coveralls.io/github/jacob-hartmann/quire-mcp?branch=expanded-tools)
+[![CodeQL](https://github.com/jacob-hartmann/quire-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/jacob-hartmann/quire-mcp/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jacob-hartmann/quire-mcp/badge)](https://securityscorecards.dev/viewer/?uri=github.com/jacob-hartmann/quire-mcp)
+[![npm version](https://img.shields.io/npm/v/quire-mcp)](https://www.npmjs.com/package/quire-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/quire-mcp)](https://www.npmjs.com/package/quire-mcp)
+[![License](https://img.shields.io/github/license/jacob-hartmann/quire-mcp)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Quire](https://quire.io/) project management platform.
 
 This server allows AI assistants (like Claude) to interact with your Quire projects, tasks, and data securely.
