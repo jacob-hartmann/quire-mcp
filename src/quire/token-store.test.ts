@@ -152,7 +152,7 @@ describe("token-store", () => {
       });
 
       // Should not throw
-      expect(() => clearTokens()).not.toThrow();
+      expect(() => { clearTokens(); }).not.toThrow();
     });
   });
 
@@ -163,7 +163,7 @@ describe("token-store", () => {
         throw new Error("Write failed");
       });
 
-      expect(() => saveTokens({ accessToken: "test" })).toThrow("Write failed");
+      expect(() => { saveTokens({ accessToken: "test" }); }).toThrow("Write failed");
     });
 
     it("should throw when mkdir fails", () => {
@@ -172,7 +172,7 @@ describe("token-store", () => {
         throw new Error("Mkdir failed");
       });
 
-      expect(() => saveTokens({ accessToken: "test" })).toThrow("Mkdir failed");
+      expect(() => { saveTokens({ accessToken: "test" }); }).toThrow("Mkdir failed");
     });
   });
 

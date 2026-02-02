@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerNotificationTools } from "./notification.js";
 import {
   createMockExtra,
@@ -74,7 +74,7 @@ describe("Notification Tools", () => {
         createMockExtra()
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -100,7 +100,7 @@ describe("Notification Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -157,7 +157,7 @@ describe("Notification Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -182,11 +182,110 @@ describe("Notification Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
       expect(extractTextContent(result)).toContain("RATE_LIMITED");
+    });
+
+    it("should handle UNAUTHORIZED error", async () => {
+      const mockClient = createMockClient({
+        sendNotification: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.sendNotification")!;
+      const result = (await tool.handler(
+        { message: "Hello!", userIds: ["user1"] },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("UNAUTHORIZED");
+      expect(extractTextContent(result)).toContain("invalid or expired");
+    });
+
+    it("should handle NOT_FOUND error", async () => {
+      const mockClient = createMockClient({
+        sendNotification: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.sendNotification")!;
+      const result = (await tool.handler(
+        { message: "Hello!", userIds: ["nonexistent-user"] },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("NOT_FOUND");
+      expect(extractTextContent(result)).toContain("not found");
+    });
+
+    it("should handle SERVER_ERROR with original message", async () => {
+      const mockClient = createMockClient({
+        sendNotification: vi.fn().mockResolvedValueOnce(mockErrors.serverError()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.sendNotification")!;
+      const result = (await tool.handler(
+        { message: "Hello!", userIds: ["user1"] },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("SERVER_ERROR");
+    });
+
+    it("should report correct user count in success message", async () => {
+      const mockClient = createMockClient({
+        sendNotification: vi.fn().mockResolvedValueOnce({
+          success: true,
+          data: { success: true },
+        }),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.sendNotification")!;
+      const result = (await tool.handler(
+        { message: "Hello!", userIds: ["user1", "user2", "user3"] },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(false);
+      expect(extractTextContent(result)).toContain("3 user(s)");
     });
   });
 });

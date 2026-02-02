@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerChatTools } from "./chat.js";
 import {
   createMockExtra,
@@ -78,7 +78,7 @@ describe("Chat Tools", () => {
         createMockExtra()
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -105,7 +105,7 @@ describe("Chat Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -169,7 +169,7 @@ describe("Chat Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -216,7 +216,7 @@ describe("Chat Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -247,7 +247,7 @@ describe("Chat Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -356,7 +356,7 @@ describe("Chat Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -383,7 +383,7 @@ describe("Chat Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -431,10 +431,296 @@ describe("Chat Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should return error on authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.deleteChat")!;
+      const result = (await tool.handler(
+        { oid: "chat-oid" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should handle API error when deleting chat", async () => {
+      const mockClient = createMockClient({
+        deleteChat: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.deleteChat")!;
+      const result = (await tool.handler(
+        { oid: "nonexistent" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+  });
+
+  describe("API error handling", () => {
+    it("should handle createChat API error", async () => {
+      const mockClient = createMockClient({
+        createChat: vi.fn().mockResolvedValueOnce(mockErrors.forbidden()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.createChat")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project", name: "Test" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle getChat API error", async () => {
+      const mockClient = createMockClient({
+        getChat: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getChat")!;
+      const result = (await tool.handler(
+        { oid: "nonexistent" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle listChats API error", async () => {
+      const mockClient = createMockClient({
+        listChats: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listChats")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle listChats authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.listChats")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should handle updateChat API error", async () => {
+      const mockClient = createMockClient({
+        updateChat: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateChat")!;
+      const result = (await tool.handler(
+        { oid: "chat-oid", name: "Updated" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle updateChat authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.updateChat")!;
+      const result = (await tool.handler(
+        { oid: "chat-oid", name: "Updated" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+  });
+
+  describe("createChat with members", () => {
+    it("should create chat with members array", async () => {
+      const mockClient = createMockClient({
+        createChat: vi.fn().mockResolvedValueOnce({
+          success: true,
+          data: { oid: "chat-oid", id: "dev", name: "Dev" },
+        }),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.createChat")!;
+      await tool.handler(
+        {
+          ownerType: "organization",
+          ownerId: "my-org",
+          name: "Dev",
+          members: ["user1", "user2"],
+        },
+        createMockExtra({ quireToken: "token" })
+      );
+
+      expect(mockClient.createChat).toHaveBeenCalledWith(
+        "organization",
+        "my-org",
+        { name: "Dev", members: ["user1", "user2"] }
+      );
+    });
+  });
+
+  describe("updateChat with member modifications", () => {
+    it("should update chat with addMembers", async () => {
+      const mockClient = createMockClient({
+        updateChat: vi.fn().mockResolvedValueOnce({
+          success: true,
+          data: { oid: "chat-oid", id: "general", name: "General" },
+        }),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateChat")!;
+      await tool.handler(
+        { oid: "chat-oid", addMembers: ["user1", "user2"] },
+        createMockExtra({ quireToken: "token" })
+      );
+
+      expect(mockClient.updateChat).toHaveBeenCalledWith("chat-oid", {
+        addMembers: ["user1", "user2"],
+      });
+    });
+
+    it("should update chat with removeMembers", async () => {
+      const mockClient = createMockClient({
+        updateChat: vi.fn().mockResolvedValueOnce({
+          success: true,
+          data: { oid: "chat-oid", id: "general", name: "General" },
+        }),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateChat")!;
+      await tool.handler(
+        { oid: "chat-oid", removeMembers: ["user3"] },
+        createMockExtra({ quireToken: "token" })
+      );
+
+      expect(mockClient.updateChat).toHaveBeenCalledWith("chat-oid", {
+        removeMembers: ["user3"],
+      });
+    });
+
+    it("should update chat with all member operations", async () => {
+      const mockClient = createMockClient({
+        updateChat: vi.fn().mockResolvedValueOnce({
+          success: true,
+          data: { oid: "chat-oid", id: "general", name: "General" },
+        }),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateChat")!;
+      await tool.handler(
+        {
+          oid: "chat-oid",
+          members: ["user1"],
+          addMembers: ["user2"],
+          removeMembers: ["user3"],
+        },
+        createMockExtra({ quireToken: "token" })
+      );
+
+      expect(mockClient.updateChat).toHaveBeenCalledWith("chat-oid", {
+        members: ["user1"],
+        addMembers: ["user2"],
+        removeMembers: ["user3"],
+      });
     });
   });
 });

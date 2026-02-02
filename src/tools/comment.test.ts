@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerCommentTools } from "./comment.js";
 import {
   createMockExtra,
@@ -79,7 +79,7 @@ describe("Comment Tools", () => {
         createMockExtra()
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -109,7 +109,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -156,7 +156,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -187,7 +187,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -236,7 +236,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -258,7 +258,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -287,7 +287,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -312,7 +312,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -340,7 +340,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -370,7 +370,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -416,7 +416,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -444,7 +444,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -493,8 +493,158 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+  });
+
+  describe("authentication failures for all tools", () => {
+    it("should return auth error for addTaskComment", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.addTaskComment")!;
+      const result = (await tool.handler(
+        { taskOid: "TaskOid", description: "Comment" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for updateComment", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.updateComment")!;
+      const result = (await tool.handler(
+        { oid: "CommentOid", description: "Updated" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for deleteComment", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.deleteComment")!;
+      const result = (await tool.handler(
+        { oid: "CommentOid" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for listChatComments", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.listChatComments")!;
+      const result = (await tool.handler(
+        { chatOid: "ChatOid" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for addChatComment", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.addChatComment")!;
+      const result = (await tool.handler(
+        { chatOid: "ChatOid", description: "Message" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+  });
+
+  describe("API error handling", () => {
+    it("should handle listTaskComments API error", async () => {
+      const mockClient = createMockClient({
+        listTaskComments: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listTaskComments")!;
+      const result = (await tool.handler(
+        { taskOid: "nonexistent" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle deleteComment API error", async () => {
+      const mockClient = createMockClient({
+        deleteComment: vi.fn().mockResolvedValueOnce(mockErrors.forbidden()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.deleteComment")!;
+      const result = (await tool.handler(
+        { oid: "CommentOid" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle listChatComments API error", async () => {
+      const mockClient = createMockClient({
+        listChatComments: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listChatComments")!;
+      const result = (await tool.handler(
+        { chatOid: "ChatOid" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle addChatComment API error", async () => {
+      const mockClient = createMockClient({
+        addChatComment: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.addChatComment")!;
+      const result = (await tool.handler(
+        { chatOid: "ChatOid", description: "Message" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
 
       expect(isErrorResponse(result)).toBe(true);
     });

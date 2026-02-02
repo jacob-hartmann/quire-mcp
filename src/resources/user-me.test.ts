@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerUserMeResource } from "./user-me.js";
 
 vi.mock("../quire/client-factory.js", () => ({
@@ -75,11 +75,11 @@ describe("registerUserMeResource", () => {
 
       const resource = registeredResources.get("user-me")!;
       const result = (await resource.handler("quire://user/me", {})) as {
-        contents: Array<{
+        contents: {
           uri: string;
           mimeType: string;
           text: string;
-        }>;
+        }[];
       };
 
       expect(result.contents).toHaveLength(1);

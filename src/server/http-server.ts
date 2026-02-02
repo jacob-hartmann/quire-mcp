@@ -493,7 +493,7 @@ export async function startHttpServer(
     };
 
     // Handle termination signals
-    process.on("SIGINT", () => shutdown("SIGINT"));
-    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => { shutdown("SIGINT"); });
+    process.on("SIGTERM", () => { shutdown("SIGTERM"); });
   });
 }

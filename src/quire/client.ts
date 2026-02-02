@@ -170,7 +170,7 @@ export class QuireClient {
       method?: "GET" | "POST" | "PUT" | "DELETE";
       body?: Record<string, unknown>;
       /** Zod schema for runtime response validation (uses ZodType<unknown> to avoid exactOptionalPropertyTypes conflicts) */
-      schema?: ZodType<unknown>;
+      schema?: ZodType;
     },
     retryCount = 0
   ): Promise<QuireResult<T>> {
@@ -969,33 +969,40 @@ export class QuireClient {
     paramsOrChatId: CreateCommentParams | string,
     params?: CreateCommentParams
   ): Promise<QuireResult<QuireComment>> {
-    let endpoint: string;
-    let commentParams: CreateCommentParams;
-
     if (typeof paramsOrChatId === "string") {
       // Using project ID + chat ID
       const chatId = paramsOrChatId;
-      commentParams = params ?? { description: "" };
-      endpoint = isOid(chatOidOrProjectId)
+      const body: Record<string, unknown> = {};
+      if (params) {
+        for (const [key, value] of Object.entries(params)) {
+          if (value !== undefined) {
+            body[key] = value;
+          }
+        }
+      }
+      const endpoint = isOid(chatOidOrProjectId)
         ? `/comment/${chatOidOrProjectId}/chat/${chatId}`
         : `/comment/id/${chatOidOrProjectId}/chat/${chatId}`;
+      return this.request<QuireComment>(endpoint, {
+        method: "POST",
+        body,
+        schema: QuireCommentSchema,
+      });
     } else {
       // Using chat OID directly
-      endpoint = `/comment/chat/${chatOidOrProjectId}`;
-      commentParams = paramsOrChatId;
-    }
-
-    const body: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(commentParams)) {
-      if (value !== undefined) {
-        body[key] = value;
+      const endpoint = `/comment/chat/${chatOidOrProjectId}`;
+      const body: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(paramsOrChatId)) {
+        if (value !== undefined) {
+          body[key] = value;
+        }
       }
+      return this.request<QuireComment>(endpoint, {
+        method: "POST",
+        body,
+        schema: QuireCommentSchema,
+      });
     }
-    return this.request<QuireComment>(endpoint, {
-      method: "POST",
-      body,
-      schema: QuireCommentSchema,
-    });
   }
 
   // =====================

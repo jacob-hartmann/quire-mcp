@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerProjectTools } from "./project.js";
 import {
   createMockExtra,
@@ -74,7 +74,7 @@ describe("Project Tools", () => {
       const tool = registeredTools.get("quire.listProjects")!;
       const result = (await tool.handler({}, createMockExtra())) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -104,7 +104,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -150,7 +150,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -183,7 +183,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -207,7 +207,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -240,7 +240,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -295,7 +295,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -327,7 +327,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -358,7 +358,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -382,7 +382,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);

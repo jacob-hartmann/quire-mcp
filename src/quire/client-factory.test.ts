@@ -8,8 +8,9 @@ import { getQuireClient, getQuireClientOrThrow } from "./client-factory.js";
 import { QuireClient } from "./client.js";
 
 // Mock the client module
+import type * as ClientModule from "./client.js";
 vi.mock("./client.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./client.js")>();
+  const actual = await importOriginal<typeof ClientModule>();
   return {
     ...actual,
     createClientFromAuth: vi.fn(),

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerStorageTools } from "./storage.js";
 import {
   createMockExtra,
@@ -77,7 +77,7 @@ describe("Storage Tools", () => {
         createMockExtra()
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -104,7 +104,7 @@ describe("Storage Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -129,7 +129,7 @@ describe("Storage Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -161,7 +161,7 @@ describe("Storage Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -189,7 +189,7 @@ describe("Storage Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -218,7 +218,7 @@ describe("Storage Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -291,7 +291,7 @@ describe("Storage Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -319,7 +319,7 @@ describe("Storage Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -343,11 +343,235 @@ describe("Storage Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
       expect(extractTextContent(result)).toContain("NOT_FOUND");
+    });
+
+    it("should return error on authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.deleteStorageValue")!;
+      const result = (await tool.handler(
+        { name: "my-key" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+  });
+
+  describe("error handling for all error codes", () => {
+    it("should handle UNAUTHORIZED error for getStorageValue", async () => {
+      const mockClient = createMockClient({
+        getStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getStorageValue")!;
+      const result = (await tool.handler(
+        { name: "my-key" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("UNAUTHORIZED");
+      expect(extractTextContent(result)).toContain("invalid or expired");
+    });
+
+    it("should handle FORBIDDEN error for getStorageValue", async () => {
+      const mockClient = createMockClient({
+        getStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.forbidden()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getStorageValue")!;
+      const result = (await tool.handler(
+        { name: "my-key" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("FORBIDDEN");
+    });
+
+    it("should handle RATE_LIMITED error for getStorageValue", async () => {
+      const mockClient = createMockClient({
+        getStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getStorageValue")!;
+      const result = (await tool.handler(
+        { name: "my-key" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("RATE_LIMITED");
+      expect(extractTextContent(result)).toContain("rate limit");
+    });
+
+    it("should handle SERVER_ERROR for getStorageValue", async () => {
+      const mockClient = createMockClient({
+        getStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.serverError()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getStorageValue")!;
+      const result = (await tool.handler(
+        { name: "my-key" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("SERVER_ERROR");
+    });
+
+    it("should handle listStorageEntries authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.listStorageEntries")!;
+      const result = (await tool.handler(
+        { prefix: "app:" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should handle listStorageEntries API error", async () => {
+      const mockClient = createMockClient({
+        listStorageEntries: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listStorageEntries")!;
+      const result = (await tool.handler(
+        { prefix: "app:" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle putStorageValue authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.putStorageValue")!;
+      const result = (await tool.handler(
+        { name: "my-key", value: "test" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should handle UNAUTHORIZED error for deleteStorageValue", async () => {
+      const mockClient = createMockClient({
+        deleteStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.deleteStorageValue")!;
+      const result = (await tool.handler(
+        { name: "my-key" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("UNAUTHORIZED");
+    });
+
+    it("should handle RATE_LIMITED error for deleteStorageValue", async () => {
+      const mockClient = createMockClient({
+        deleteStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.deleteStorageValue")!;
+      const result = (await tool.handler(
+        { name: "my-key" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("RATE_LIMITED");
     });
   });
 });
