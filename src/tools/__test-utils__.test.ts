@@ -28,7 +28,7 @@ describe("Test Utilities", () => {
 
       expect(extra.signal).toBeDefined();
       expect(extra.authInfo).toBeDefined();
-      expect(extra.authInfo?.extra?.quireToken).toBe("test-token");
+      expect(extra.authInfo?.extra?.["quireToken"]).toBe("test-token");
       expect(extra.authInfo?.token).toBe("mcp-token");
       expect(extra.authInfo?.clientId).toBe("test-client");
       expect(extra.authInfo?.scopes).toEqual(["read", "write"]);
@@ -37,7 +37,7 @@ describe("Test Utilities", () => {
     it("should handle empty string token", () => {
       const extra = createMockExtra({ quireToken: "" });
 
-      expect(extra.authInfo?.extra?.quireToken).toBe("");
+      expect(extra.authInfo?.extra?.["quireToken"]).toBe("");
     });
   });
 
@@ -45,11 +45,11 @@ describe("Test Utilities", () => {
     it("should create mock client with default implementations", () => {
       const client = createMockClient();
 
-      expect(client.getMe).toBeDefined();
-      expect(client.getUser).toBeDefined();
-      expect(client.listOrganizations).toBeDefined();
-      expect(client.listProjects).toBeDefined();
-      expect(client.listTasks).toBeDefined();
+      expect(client.getMe.bind(client)).toBeDefined();
+      expect(client.getUser.bind(client)).toBeDefined();
+      expect(client.listOrganizations.bind(client)).toBeDefined();
+      expect(client.listProjects.bind(client)).toBeDefined();
+      expect(client.listTasks.bind(client)).toBeDefined();
     });
 
     it("should allow overriding default implementations", async () => {
@@ -66,7 +66,7 @@ describe("Test Utilities", () => {
       };
 
       const client = createMockClient({
-        getMe: async () => customResponse,
+        getMe: () => Promise.resolve(customResponse),
       });
 
       const result = await client.getMe();
@@ -102,7 +102,7 @@ describe("Test Utilities", () => {
 
       it("listUsers should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.listUsers({ projectId: "proj" });
+        const result = await client.listUsers();
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -152,7 +152,7 @@ describe("Test Utilities", () => {
 
       it("listTasks should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.listTasks({ projectId: "proj" });
+        const result = await client.listTasks("proj");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -162,7 +162,7 @@ describe("Test Utilities", () => {
 
       it("getTask should return success", async () => {
         const client = createMockClient();
-        const result = await client.getTask("proj", "task-oid");
+        const result = await client.getTask("proj", 1);
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -182,7 +182,7 @@ describe("Test Utilities", () => {
 
       it("updateTask should return success", async () => {
         const client = createMockClient();
-        const result = await client.updateTask("proj", "task-oid", {
+        const result = await client.updateTask("proj", 1, {
           name: "Updated",
         });
 
@@ -194,7 +194,7 @@ describe("Test Utilities", () => {
 
       it("deleteTask should return success", async () => {
         const client = createMockClient();
-        const result = await client.deleteTask("proj", "task-oid");
+        const result = await client.deleteTask("task-oid");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -204,10 +204,7 @@ describe("Test Utilities", () => {
 
       it("searchTasks should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.searchTasks({
-          projectId: "proj",
-          keyword: "test",
-        });
+        const result = await client.searchTasks("proj", "test");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -217,7 +214,7 @@ describe("Test Utilities", () => {
 
       it("listTags should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.listTags({ projectId: "proj" });
+        const result = await client.listTags("proj");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -227,7 +224,7 @@ describe("Test Utilities", () => {
 
       it("getTag should return success", async () => {
         const client = createMockClient();
-        const result = await client.getTag("proj", 1);
+        const result = await client.getTag("tag-oid");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -247,7 +244,7 @@ describe("Test Utilities", () => {
 
       it("listTaskComments should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.listTaskComments("proj", "task-oid");
+        const result = await client.listTaskComments("task-oid");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -257,7 +254,7 @@ describe("Test Utilities", () => {
 
       it("addTaskComment should return success", async () => {
         const client = createMockClient();
-        const result = await client.addTaskComment("proj", "task-oid", {
+        const result = await client.addTaskComment("task-oid", {
           description: "Comment",
         });
 
@@ -309,7 +306,7 @@ describe("Test Utilities", () => {
 
       it("getPartner should return success", async () => {
         const client = createMockClient();
-        const result = await client.getPartner("proj", "partner-oid");
+        const result = await client.getPartner("partner-oid");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -319,7 +316,9 @@ describe("Test Utilities", () => {
 
       it("createDocument should return success", async () => {
         const client = createMockClient();
-        const result = await client.createDocument("proj", { name: "Doc" });
+        const result = await client.createDocument("project", "proj", {
+          name: "Doc",
+        });
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -329,7 +328,7 @@ describe("Test Utilities", () => {
 
       it("listDocuments should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.listDocuments("proj");
+        const result = await client.listDocuments("project", "proj");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -339,7 +338,9 @@ describe("Test Utilities", () => {
 
       it("createSublist should return success", async () => {
         const client = createMockClient();
-        const result = await client.createSublist("proj", { name: "Sublist" });
+        const result = await client.createSublist("project", "proj", {
+          name: "Sublist",
+        });
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -349,7 +350,7 @@ describe("Test Utilities", () => {
 
       it("listSublists should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.listSublists("proj");
+        const result = await client.listSublists("project", "proj");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -359,7 +360,9 @@ describe("Test Utilities", () => {
 
       it("createChat should return success", async () => {
         const client = createMockClient();
-        const result = await client.createChat("proj", { name: "Chat" });
+        const result = await client.createChat("project", "proj", {
+          name: "Chat",
+        });
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -369,7 +372,7 @@ describe("Test Utilities", () => {
 
       it("listChats should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.listChats("proj");
+        const result = await client.listChats("project", "proj");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -389,7 +392,7 @@ describe("Test Utilities", () => {
 
       it("listStorageEntries should return empty array", async () => {
         const client = createMockClient();
-        const result = await client.listStorageEntries();
+        const result = await client.listStorageEntries("");
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -409,10 +412,11 @@ describe("Test Utilities", () => {
 
       it("uploadTaskAttachment should return success", async () => {
         const client = createMockClient();
-        const result = await client.uploadTaskAttachment("proj", "task", {
-          content: "data",
-          fileName: "file.txt",
-        });
+        const result = await client.uploadTaskAttachment(
+          "task-oid",
+          "file.txt",
+          "data"
+        );
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -552,7 +556,7 @@ describe("Test Utilities", () => {
     });
 
     it("should return false for response without isError", () => {
-      const response = { content: [] };
+      const response = { content: [] } as { isError?: boolean };
 
       expect(isErrorResponse(response)).toBe(false);
     });

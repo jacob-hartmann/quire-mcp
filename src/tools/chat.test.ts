@@ -43,7 +43,10 @@ describe("Chat Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -72,7 +75,9 @@ describe("Chat Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.createChat")!;
+      const tool = registeredTools.get("quire.createChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project", name: "General" },
         createMockExtra()
@@ -99,7 +104,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createChat")!;
+      const tool = registeredTools.get("quire.createChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project", name: "General" },
         createMockExtra({ quireToken: "token" })
@@ -129,7 +136,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createChat")!;
+      const tool = registeredTools.get("quire.createChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           ownerType: "organization",
@@ -163,7 +172,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getChat")!;
+      const tool = registeredTools.get("quire.getChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "ChatOid" },
         createMockExtra({ quireToken: "token" })
@@ -189,7 +200,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getChat")!;
+      const tool = registeredTools.get("quire.getChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "project", ownerId: "my-project", chatId: "general" },
         createMockExtra({ quireToken: "token" })
@@ -210,7 +223,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getChat")!;
+      const tool = registeredTools.get("quire.getChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project" },
         createMockExtra({ quireToken: "token" })
@@ -241,7 +256,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listChats")!;
+      const tool = registeredTools.get("quire.listChats");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -271,7 +288,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listChats")!;
+      const tool = registeredTools.get("quire.listChats");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "organization", ownerId: "my-org" },
         createMockExtra({ quireToken: "token" })
@@ -298,7 +317,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateChat")!;
+      const tool = registeredTools.get("quire.updateChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { oid: "ChatOid", name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -322,7 +343,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateChat")!;
+      const tool = registeredTools.get("quire.updateChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           ownerType: "project",
@@ -350,7 +373,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateChat")!;
+      const tool = registeredTools.get("quire.updateChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -377,7 +402,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteChat")!;
+      const tool = registeredTools.get("quire.deleteChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "ChatOid" },
         createMockExtra({ quireToken: "token" })
@@ -404,7 +431,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteChat")!;
+      const tool = registeredTools.get("quire.deleteChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "project", ownerId: "my-project", chatId: "general" },
         createMockExtra({ quireToken: "token" })
@@ -425,7 +454,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteChat")!;
+      const tool = registeredTools.get("quire.deleteChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -444,7 +475,9 @@ describe("Chat Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.deleteChat")!;
+      const tool = registeredTools.get("quire.deleteChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "chat-oid" },
         createMockExtra()
@@ -467,7 +500,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteChat")!;
+      const tool = registeredTools.get("quire.deleteChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -491,7 +526,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createChat")!;
+      const tool = registeredTools.get("quire.createChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project", name: "Test" },
         createMockExtra({ quireToken: "token" })
@@ -513,7 +550,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getChat")!;
+      const tool = registeredTools.get("quire.getChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -535,7 +574,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listChats")!;
+      const tool = registeredTools.get("quire.listChats");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -554,7 +595,9 @@ describe("Chat Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listChats")!;
+      const tool = registeredTools.get("quire.listChats");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra()
@@ -577,7 +620,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateChat")!;
+      const tool = registeredTools.get("quire.updateChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "chat-oid", name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -596,7 +641,9 @@ describe("Chat Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.updateChat")!;
+      const tool = registeredTools.get("quire.updateChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "chat-oid", name: "Updated" },
         createMockExtra()
@@ -624,7 +671,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createChat")!;
+      const tool = registeredTools.get("quire.createChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           ownerType: "organization",
@@ -657,7 +706,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateChat")!;
+      const tool = registeredTools.get("quire.updateChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { oid: "chat-oid", addMembers: ["user1", "user2"] },
         createMockExtra({ quireToken: "token" })
@@ -681,7 +732,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateChat")!;
+      const tool = registeredTools.get("quire.updateChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { oid: "chat-oid", removeMembers: ["user3"] },
         createMockExtra({ quireToken: "token" })
@@ -705,7 +758,9 @@ describe("Chat Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateChat")!;
+      const tool = registeredTools.get("quire.updateChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           oid: "chat-oid",

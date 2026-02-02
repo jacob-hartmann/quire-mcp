@@ -10,8 +10,10 @@ import type { HttpServerConfig } from "./config.js";
 import { ServerTokenStore } from "./server-token-store.js";
 
 vi.mock("./server-token-store.js", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("./server-token-store.js")>();
+  const original = await importOriginal<
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    typeof import("./server-token-store.js")
+  >();
   return {
     ...original,
     getServerTokenStore: vi.fn(),
@@ -120,7 +122,8 @@ describe("QuireProxyOAuthProvider", () => {
         redirect: vi.fn(),
       } as unknown as ExpressResponse;
 
-      await provider.authorize(
+      const authorizeFn = provider.authorize.bind(provider);
+      await authorizeFn(
         client,
         {
           redirectUri: "http://localhost/callback",
@@ -132,8 +135,9 @@ describe("QuireProxyOAuthProvider", () => {
       );
 
       expect(mockRes.redirect).toHaveBeenCalled();
-      const redirectUrl = (mockRes.redirect as ReturnType<typeof vi.fn>).mock
-        .calls[0][0] as string;
+      const redirectCall = (mockRes.redirect as ReturnType<typeof vi.fn>).mock
+        .calls[0];
+      const redirectUrl = redirectCall?.[0] as string;
       expect(redirectUrl).toContain("https://quire.io/oauth");
       expect(redirectUrl).toContain("client_id=quire-client-id");
       expect(redirectUrl).toContain(
@@ -155,7 +159,8 @@ describe("QuireProxyOAuthProvider", () => {
         redirect: vi.fn(),
       } as unknown as ExpressResponse;
 
-      await provider.authorize(
+      const authorizeFn = provider.authorize.bind(provider);
+      await authorizeFn(
         client,
         {
           redirectUri: "http://evil.com/callback",
@@ -186,7 +191,8 @@ describe("QuireProxyOAuthProvider", () => {
         scope: undefined,
       });
 
-      const challenge = await provider.challengeForAuthorizationCode(
+      const challengeFn = provider.challengeForAuthorizationCode.bind(provider);
+      const challenge = await challengeFn(
         {} as OAuthClientInformationFull,
         code
       );
@@ -427,13 +433,13 @@ describe("QuireProxyOAuthProvider", () => {
       expect(authInfo.token).toBe(accessToken);
       expect(authInfo.clientId).toBe("test-client");
       expect(authInfo.scopes).toEqual(["read", "write"]);
-      expect(authInfo.extra?.quireToken).toBe("quire-token");
+      expect(authInfo.extra?.["quireToken"]).toBe("quire-token");
     });
 
     it("should throw for invalid token", async () => {
-      await expect(
-        provider.verifyAccessToken("invalid-token")
-      ).rejects.toThrow("Invalid or expired token");
+      await expect(provider.verifyAccessToken("invalid-token")).rejects.toThrow(
+        "Invalid or expired token"
+      );
     });
 
     it("should handle empty scope", async () => {

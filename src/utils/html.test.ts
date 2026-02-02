@@ -39,7 +39,7 @@ describe("escapeHtml", () => {
   });
 
   it("should handle string with only special characters", () => {
-    expect(escapeHtml("<>&\"")).toBe("&lt;&gt;&amp;&quot;");
+    expect(escapeHtml('<>&"')).toBe("&lt;&gt;&amp;&quot;");
   });
 
   it("should handle repeated special characters", () => {
@@ -51,9 +51,7 @@ describe("escapeHtml", () => {
   });
 
   it("should handle newlines and whitespace", () => {
-    expect(escapeHtml("line1\nline2\t<tab>")).toBe(
-      "line1\nline2\t&lt;tab&gt;"
-    );
+    expect(escapeHtml("line1\nline2\t<tab>")).toBe("line1\nline2\t&lt;tab&gt;");
   });
 
   it("should handle HTML entities within content", () => {

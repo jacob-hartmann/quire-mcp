@@ -274,7 +274,11 @@ export function registerChatTools(server: McpServer): void {
       if (oid) {
         result = await clientResult.client.deleteChat(oid);
       } else if (ownerType && ownerId && chatId) {
-        result = await clientResult.client.deleteChat(ownerType, ownerId, chatId);
+        result = await clientResult.client.deleteChat(
+          ownerType,
+          ownerId,
+          chatId
+        );
       } else {
         return formatValidationError(
           "Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'chatId'"

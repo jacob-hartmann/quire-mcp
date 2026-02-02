@@ -21,11 +21,12 @@ import { createClientFromAuth } from "./client.js";
 
 type MockExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
 
-function createMockExtra(options?: {
-  quireToken?: string;
-}): MockExtra {
+function createMockExtra(options?: { quireToken?: string }): MockExtra {
   const extra: MockExtra = {
     signal: new AbortController().signal,
+    requestId: "test-request-id",
+    sendNotification: vi.fn().mockResolvedValue(undefined),
+    sendRequest: vi.fn().mockResolvedValue(undefined),
   };
 
   if (options?.quireToken !== undefined) {
@@ -81,6 +82,9 @@ describe("getQuireClient", () => {
     it("should fall back when authInfo is missing", async () => {
       const extra: MockExtra = {
         signal: new AbortController().signal,
+        requestId: "test-request-id",
+        sendNotification: vi.fn().mockResolvedValue(undefined),
+        sendRequest: vi.fn().mockResolvedValue(undefined),
       };
 
       vi.mocked(createClientFromAuth).mockResolvedValueOnce({
@@ -97,6 +101,9 @@ describe("getQuireClient", () => {
     it("should fall back when extra is missing from authInfo", async () => {
       const extra: MockExtra = {
         signal: new AbortController().signal,
+        requestId: "test-request-id",
+        sendNotification: vi.fn().mockResolvedValue(undefined),
+        sendRequest: vi.fn().mockResolvedValue(undefined),
         authInfo: {
           token: "mcp-token",
           clientId: "test-client",
@@ -120,6 +127,9 @@ describe("getQuireClient", () => {
     it("should return client when createClientFromAuth succeeds", async () => {
       const extra: MockExtra = {
         signal: new AbortController().signal,
+        requestId: "test-request-id",
+        sendNotification: vi.fn().mockResolvedValue(undefined),
+        sendRequest: vi.fn().mockResolvedValue(undefined),
       };
 
       vi.mocked(createClientFromAuth).mockResolvedValueOnce({
@@ -138,6 +148,9 @@ describe("getQuireClient", () => {
     it("should return error when createClientFromAuth fails", async () => {
       const extra: MockExtra = {
         signal: new AbortController().signal,
+        requestId: "test-request-id",
+        sendNotification: vi.fn().mockResolvedValue(undefined),
+        sendRequest: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockError = {
@@ -186,6 +199,9 @@ describe("getQuireClientOrThrow", () => {
   it("should throw Error when getQuireClient fails", async () => {
     const extra: MockExtra = {
       signal: new AbortController().signal,
+      requestId: "test-request-id",
+      sendNotification: vi.fn().mockResolvedValue(undefined),
+      sendRequest: vi.fn().mockResolvedValue(undefined),
     };
 
     const mockError = {

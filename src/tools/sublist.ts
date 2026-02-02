@@ -94,7 +94,11 @@ export function registerSublistTools(server: McpServer): void {
       if (oid) {
         result = await clientResult.client.getSublist(oid);
       } else if (ownerType && ownerId && sublistId) {
-        result = await clientResult.client.getSublist(ownerType, ownerId, sublistId);
+        result = await clientResult.client.getSublist(
+          ownerType,
+          ownerId,
+          sublistId
+        );
       } else {
         return formatValidationError(
           "Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'"

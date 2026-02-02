@@ -43,7 +43,10 @@ describe("Notification Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -241,7 +244,9 @@ describe("Notification Tools", () => {
 
     it("should handle SERVER_ERROR with original message", async () => {
       const mockClient = createMockClient({
-        sendNotification: vi.fn().mockResolvedValueOnce(mockErrors.serverError()),
+        sendNotification: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.serverError()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({

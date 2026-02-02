@@ -45,7 +45,10 @@ describe("quire.whoami tool", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -59,7 +62,7 @@ describe("quire.whoami tool", () => {
   });
 
   it("should register the quire.whoami tool", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(1);
+    expect(server.registerTool.bind(server)).toHaveBeenCalledTimes(1);
     expect(registeredTools.has("quire.whoami")).toBe(true);
   });
 
@@ -71,7 +74,9 @@ describe("quire.whoami tool", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.whoami")!;
+      const tool = registeredTools.get("quire.whoami");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const extra = createMockExtra();
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
@@ -105,7 +110,9 @@ describe("quire.whoami tool", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.whoami")!;
+      const tool = registeredTools.get("quire.whoami");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const extra = createMockExtra({ quireToken: "valid-token" });
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
@@ -131,7 +138,9 @@ describe("quire.whoami tool", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.whoami")!;
+      const tool = registeredTools.get("quire.whoami");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const extra = createMockExtra({ quireToken: "invalid-token" });
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
@@ -154,7 +163,9 @@ describe("quire.whoami tool", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.whoami")!;
+      const tool = registeredTools.get("quire.whoami");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const extra = createMockExtra({ quireToken: "valid-token" });
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
@@ -177,7 +188,9 @@ describe("quire.whoami tool", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.whoami")!;
+      const tool = registeredTools.get("quire.whoami");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const extra = createMockExtra({ quireToken: "valid-token" });
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;

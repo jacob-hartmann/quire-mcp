@@ -43,7 +43,10 @@ describe("Comment Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -56,7 +59,7 @@ describe("Comment Tools", () => {
   });
 
   it("should register all comment tools", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(6);
+    expect(server.registerTool.bind(server)).toHaveBeenCalledTimes(6);
     expect(registeredTools.has("quire.listTaskComments")).toBe(true);
     expect(registeredTools.has("quire.addTaskComment")).toBe(true);
     expect(registeredTools.has("quire.updateComment")).toBe(true);
@@ -73,7 +76,9 @@ describe("Comment Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listTaskComments")!;
+      const tool = registeredTools.get("quire.listTaskComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { taskOid: "TaskOid" },
         createMockExtra()
@@ -103,7 +108,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTaskComments")!;
+      const tool = registeredTools.get("quire.listTaskComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { taskOid: "TaskOid" },
         createMockExtra({ quireToken: "token" })
@@ -114,7 +121,9 @@ describe("Comment Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("First comment");
-      expect(mockClient.listTaskComments).toHaveBeenCalledWith("TaskOid");
+      expect(mockClient.listTaskComments.bind(mockClient)).toHaveBeenCalledWith(
+        "TaskOid"
+      );
     });
 
     it("should list comments by project ID and task ID", async () => {
@@ -130,13 +139,15 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTaskComments")!;
+      const tool = registeredTools.get("quire.listTaskComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { projectId: "my-project", taskId: 123 },
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.listTaskComments).toHaveBeenCalledWith(
+      expect(mockClient.listTaskComments.bind(mockClient)).toHaveBeenCalledWith(
         "my-project",
         123
       );
@@ -150,7 +161,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTaskComments")!;
+      const tool = registeredTools.get("quire.listTaskComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -181,7 +194,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.addTaskComment")!;
+      const tool = registeredTools.get("quire.addTaskComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { taskOid: "TaskOid", description: "New comment" },
         createMockExtra({ quireToken: "token" })
@@ -191,9 +206,12 @@ describe("Comment Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.addTaskComment).toHaveBeenCalledWith("TaskOid", {
-        description: "New comment",
-      });
+      expect(mockClient.addTaskComment.bind(mockClient)).toHaveBeenCalledWith(
+        "TaskOid",
+        {
+          description: "New comment",
+        }
+      );
     });
 
     it("should add comment by project ID and task ID", async () => {
@@ -209,13 +227,15 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.addTaskComment")!;
+      const tool = registeredTools.get("quire.addTaskComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { projectId: "my-project", taskId: 123, description: "Comment" },
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.addTaskComment).toHaveBeenCalledWith(
+      expect(mockClient.addTaskComment.bind(mockClient)).toHaveBeenCalledWith(
         "my-project",
         123,
         { description: "Comment" }
@@ -230,7 +250,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.addTaskComment")!;
+      const tool = registeredTools.get("quire.addTaskComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { description: "Comment" },
         createMockExtra({ quireToken: "token" })
@@ -252,7 +274,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.addTaskComment")!;
+      const tool = registeredTools.get("quire.addTaskComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { taskOid: "TaskOid", description: "Comment" },
         createMockExtra({ quireToken: "token" })
@@ -281,7 +305,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateComment")!;
+      const tool = registeredTools.get("quire.updateComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "CommentOid", description: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -291,9 +317,12 @@ describe("Comment Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.updateComment).toHaveBeenCalledWith("CommentOid", {
-        description: "Updated",
-      });
+      expect(mockClient.updateComment.bind(mockClient)).toHaveBeenCalledWith(
+        "CommentOid",
+        {
+          description: "Updated",
+        }
+      );
     });
 
     it("should handle NOT_FOUND error", async () => {
@@ -306,7 +335,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateComment")!;
+      const tool = registeredTools.get("quire.updateComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent", description: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -334,7 +365,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteComment")!;
+      const tool = registeredTools.get("quire.deleteComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "CommentOid" },
         createMockExtra({ quireToken: "token" })
@@ -345,7 +378,9 @@ describe("Comment Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("deleted successfully");
-      expect(mockClient.deleteComment).toHaveBeenCalledWith("CommentOid");
+      expect(mockClient.deleteComment.bind(mockClient)).toHaveBeenCalledWith(
+        "CommentOid"
+      );
     });
   });
 
@@ -364,7 +399,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listChatComments")!;
+      const tool = registeredTools.get("quire.listChatComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { chatOid: "ChatOid" },
         createMockExtra({ quireToken: "token" })
@@ -374,7 +411,9 @@ describe("Comment Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.listChatComments).toHaveBeenCalledWith("ChatOid");
+      expect(mockClient.listChatComments.bind(mockClient)).toHaveBeenCalledWith(
+        "ChatOid"
+      );
     });
 
     it("should list chat comments by project ID and chat ID", async () => {
@@ -390,13 +429,15 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listChatComments")!;
+      const tool = registeredTools.get("quire.listChatComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { projectId: "my-project", chatId: "general" },
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.listChatComments).toHaveBeenCalledWith(
+      expect(mockClient.listChatComments.bind(mockClient)).toHaveBeenCalledWith(
         "my-project",
         "general"
       );
@@ -410,7 +451,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listChatComments")!;
+      const tool = registeredTools.get("quire.listChatComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -438,7 +481,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.addChatComment")!;
+      const tool = registeredTools.get("quire.addChatComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { chatOid: "ChatOid", description: "Chat message" },
         createMockExtra({ quireToken: "token" })
@@ -448,9 +493,12 @@ describe("Comment Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.addChatComment).toHaveBeenCalledWith("ChatOid", {
-        description: "Chat message",
-      });
+      expect(mockClient.addChatComment.bind(mockClient)).toHaveBeenCalledWith(
+        "ChatOid",
+        {
+          description: "Chat message",
+        }
+      );
     });
 
     it("should add chat comment by project ID and chat ID", async () => {
@@ -466,13 +514,15 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.addChatComment")!;
+      const tool = registeredTools.get("quire.addChatComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { projectId: "my-project", chatId: "general", description: "Message" },
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.addChatComment).toHaveBeenCalledWith(
+      expect(mockClient.addChatComment.bind(mockClient)).toHaveBeenCalledWith(
         "my-project",
         "general",
         { description: "Message" }
@@ -487,7 +537,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.addChatComment")!;
+      const tool = registeredTools.get("quire.addChatComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { description: "Message" },
         createMockExtra({ quireToken: "token" })
@@ -502,10 +554,15 @@ describe("Comment Tools", () => {
 
   describe("authentication failures for all tools", () => {
     it("should return auth error for addTaskComment", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.addTaskComment")!;
+      const tool = registeredTools.get("quire.addTaskComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { taskOid: "TaskOid", description: "Comment" },
         createMockExtra()
@@ -516,10 +573,15 @@ describe("Comment Tools", () => {
     });
 
     it("should return auth error for updateComment", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.updateComment")!;
+      const tool = registeredTools.get("quire.updateComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "CommentOid", description: "Updated" },
         createMockExtra()
@@ -530,10 +592,15 @@ describe("Comment Tools", () => {
     });
 
     it("should return auth error for deleteComment", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.deleteComment")!;
+      const tool = registeredTools.get("quire.deleteComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "CommentOid" },
         createMockExtra()
@@ -544,10 +611,15 @@ describe("Comment Tools", () => {
     });
 
     it("should return auth error for listChatComments", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listChatComments")!;
+      const tool = registeredTools.get("quire.listChatComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { chatOid: "ChatOid" },
         createMockExtra()
@@ -558,10 +630,15 @@ describe("Comment Tools", () => {
     });
 
     it("should return auth error for addChatComment", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.addChatComment")!;
+      const tool = registeredTools.get("quire.addChatComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { chatOid: "ChatOid", description: "Message" },
         createMockExtra()
@@ -583,7 +660,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTaskComments")!;
+      const tool = registeredTools.get("quire.listTaskComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { taskOid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -602,7 +681,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteComment")!;
+      const tool = registeredTools.get("quire.deleteComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "CommentOid" },
         createMockExtra({ quireToken: "token" })
@@ -613,7 +694,9 @@ describe("Comment Tools", () => {
 
     it("should handle listChatComments API error", async () => {
       const mockClient = createMockClient({
-        listChatComments: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+        listChatComments: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.unauthorized()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({
@@ -621,7 +704,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listChatComments")!;
+      const tool = registeredTools.get("quire.listChatComments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { chatOid: "ChatOid" },
         createMockExtra({ quireToken: "token" })
@@ -640,7 +725,9 @@ describe("Comment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.addChatComment")!;
+      const tool = registeredTools.get("quire.addChatComment");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { chatOid: "ChatOid", description: "Message" },
         createMockExtra({ quireToken: "token" })

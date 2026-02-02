@@ -31,9 +31,9 @@ describe("isCorsAllowedPath", () => {
     expect(isCorsAllowedPath("/token-info")).toBe(false);
     expect(isCorsAllowedPath("/register-user")).toBe(false);
     expect(isCorsAllowedPath("/oauth/callback-malicious")).toBe(false);
-    expect(isCorsAllowedPath("/.well-known/oauth-authorization-server-malicious")).toBe(
-      false
-    );
+    expect(
+      isCorsAllowedPath("/.well-known/oauth-authorization-server-malicious")
+    ).toBe(false);
   });
 
   it("rejects unrelated endpoints", () => {
@@ -41,4 +41,3 @@ describe("isCorsAllowedPath", () => {
     expect(isCorsAllowedPath("/")).toBe(false);
   });
 });
-

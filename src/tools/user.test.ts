@@ -43,7 +43,10 @@ describe("User Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -70,7 +73,10 @@ describe("User Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.getUser")!;
+      const tool = registeredTools.get("quire.getUser");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool should be defined");
+
       const result = (await tool.handler(
         { id: "john_doe" },
         createMockExtra()
@@ -103,7 +109,10 @@ describe("User Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getUser")!;
+      const tool = registeredTools.get("quire.getUser");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool should be defined");
+
       const result = (await tool.handler(
         { id: "john_doe" },
         createMockExtra({ quireToken: "token" })
@@ -128,7 +137,10 @@ describe("User Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getUser")!;
+      const tool = registeredTools.get("quire.getUser");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool should be defined");
+
       const result = (await tool.handler(
         { id: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -160,7 +172,10 @@ describe("User Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listUsers")!;
+      const tool = registeredTools.get("quire.listUsers");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool should be defined");
+
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -184,7 +199,10 @@ describe("User Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listUsers")!;
+      const tool = registeredTools.get("quire.listUsers");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool should be defined");
+
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -231,7 +249,9 @@ describe("User Tools", () => {
 
     it("should handle NOT_FOUND error", async () => {
       const mockClient = createMockClient({
-        listProjectMembers: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+        listProjectMembers: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.notFound()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({

@@ -93,12 +93,12 @@ describe("Quire MCP Server Components", () => {
       const server = new McpServer({
         name: "quire-mcp",
         version: "0.1.0",
-      }) as unknown as { connect: ReturnType<typeof vi.fn> };
+      }) as unknown as { connect: (transport: unknown) => Promise<void> };
       const transport = new StdioServerTransport();
 
       await server.connect(transport);
 
-      expect(server.connect).toHaveBeenCalledWith(transport);
+      expect(vi.mocked(server.connect)).toHaveBeenCalledWith(transport);
     });
   });
 
@@ -139,13 +139,13 @@ describe("Quire MCP Server Components", () => {
       const server = new McpServer({
         name: "quire-mcp",
         version: "0.1.0",
-      }) as unknown as { connect: ReturnType<typeof vi.fn> };
+      }) as unknown as { connect: (transport: unknown) => Promise<void> };
       const transport = new StdioServerTransport();
 
       // Simulate startStdioServer
       await server.connect(transport);
 
-      expect(server.connect).toHaveBeenCalledWith(transport);
+      expect(vi.mocked(server.connect)).toHaveBeenCalledWith(transport);
     });
   });
 });

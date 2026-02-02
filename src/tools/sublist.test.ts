@@ -43,7 +43,10 @@ describe("Sublist Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -72,7 +75,9 @@ describe("Sublist Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.createSublist")!;
+      const tool = registeredTools.get("quire.createSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project", name: "Sprint 1" },
         createMockExtra()
@@ -86,7 +91,11 @@ describe("Sublist Tools", () => {
     });
 
     it("should create sublist for project", async () => {
-      const mockSublist = { oid: "sublist-oid", id: "sprint-1", name: "Sprint 1" };
+      const mockSublist = {
+        oid: "sublist-oid",
+        id: "sprint-1",
+        name: "Sprint 1",
+      };
       const mockClient = createMockClient({
         createSublist: vi.fn().mockResolvedValueOnce({
           success: true,
@@ -99,7 +108,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createSublist")!;
+      const tool = registeredTools.get("quire.createSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project", name: "Sprint 1" },
         createMockExtra({ quireToken: "token" })
@@ -129,7 +140,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createSublist")!;
+      const tool = registeredTools.get("quire.createSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           ownerType: "project",
@@ -150,7 +163,11 @@ describe("Sublist Tools", () => {
 
   describe("quire.getSublist", () => {
     it("should get sublist by OID", async () => {
-      const mockSublist = { oid: "SublistOid", id: "sprint-1", name: "Sprint 1" };
+      const mockSublist = {
+        oid: "SublistOid",
+        id: "sprint-1",
+        name: "Sprint 1",
+      };
       const mockClient = createMockClient({
         getSublist: vi.fn().mockResolvedValueOnce({
           success: true,
@@ -163,7 +180,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getSublist")!;
+      const tool = registeredTools.get("quire.getSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "SublistOid" },
         createMockExtra({ quireToken: "token" })
@@ -189,7 +208,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getSublist")!;
+      const tool = registeredTools.get("quire.getSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "project", ownerId: "my-project", sublistId: "sprint-1" },
         createMockExtra({ quireToken: "token" })
@@ -210,7 +231,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getSublist")!;
+      const tool = registeredTools.get("quire.getSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project" },
         createMockExtra({ quireToken: "token" })
@@ -241,7 +264,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listSublists")!;
+      const tool = registeredTools.get("quire.listSublists");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -273,7 +298,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateSublist")!;
+      const tool = registeredTools.get("quire.updateSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { oid: "SublistOid", name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -297,7 +324,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateSublist")!;
+      const tool = registeredTools.get("quire.updateSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           ownerType: "project",
@@ -324,7 +353,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateSublist")!;
+      const tool = registeredTools.get("quire.updateSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -351,7 +382,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteSublist")!;
+      const tool = registeredTools.get("quire.deleteSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "SublistOid" },
         createMockExtra({ quireToken: "token" })
@@ -378,7 +411,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteSublist")!;
+      const tool = registeredTools.get("quire.deleteSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "project", ownerId: "my-project", sublistId: "sprint-1" },
         createMockExtra({ quireToken: "token" })
@@ -399,7 +434,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteSublist")!;
+      const tool = registeredTools.get("quire.deleteSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -414,10 +451,15 @@ describe("Sublist Tools", () => {
 
   describe("authentication failures", () => {
     it("should return auth error for getSublist", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.getSublist")!;
+      const tool = registeredTools.get("quire.getSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "SublistOid" },
         createMockExtra()
@@ -428,10 +470,15 @@ describe("Sublist Tools", () => {
     });
 
     it("should return auth error for listSublists", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listSublists")!;
+      const tool = registeredTools.get("quire.listSublists");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra()
@@ -442,10 +489,15 @@ describe("Sublist Tools", () => {
     });
 
     it("should return auth error for updateSublist", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.updateSublist")!;
+      const tool = registeredTools.get("quire.updateSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "SublistOid", name: "Updated" },
         createMockExtra()
@@ -456,10 +508,15 @@ describe("Sublist Tools", () => {
     });
 
     it("should return auth error for deleteSublist", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.deleteSublist")!;
+      const tool = registeredTools.get("quire.deleteSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "SublistOid" },
         createMockExtra()
@@ -481,7 +538,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createSublist")!;
+      const tool = registeredTools.get("quire.createSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project", name: "Sublist" },
         createMockExtra({ quireToken: "token" })
@@ -500,7 +559,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getSublist")!;
+      const tool = registeredTools.get("quire.getSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -519,7 +580,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listSublists")!;
+      const tool = registeredTools.get("quire.listSublists");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -538,7 +601,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateSublist")!;
+      const tool = registeredTools.get("quire.updateSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "SublistOid", name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -557,7 +622,9 @@ describe("Sublist Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteSublist")!;
+      const tool = registeredTools.get("quire.deleteSublist");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "SublistOid" },
         createMockExtra({ quireToken: "token" })

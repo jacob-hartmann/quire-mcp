@@ -43,7 +43,10 @@ describe("Task Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -77,7 +80,9 @@ describe("Task Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listTasks")!;
+      const tool = registeredTools.get("quire.listTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra()
@@ -107,7 +112,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTasks")!;
+      const tool = registeredTools.get("quire.listTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -118,7 +125,10 @@ describe("Task Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("Task 1");
-      expect(mockClient.listTasks).toHaveBeenCalledWith("my-project", undefined);
+      expect(mockClient.listTasks).toHaveBeenCalledWith(
+        "my-project",
+        undefined
+      );
     });
 
     it("should list subtasks when parentTaskOid provided", async () => {
@@ -134,7 +144,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTasks")!;
+      const tool = registeredTools.get("quire.listTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { projectId: "my-project", parentTaskOid: "ParentOid" },
         createMockExtra({ quireToken: "token" })
@@ -156,7 +168,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTasks")!;
+      const tool = registeredTools.get("quire.listTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -185,7 +199,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getTask")!;
+      const tool = registeredTools.get("quire.getTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TaskOid" },
         createMockExtra({ quireToken: "token" })
@@ -213,7 +229,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getTask")!;
+      const tool = registeredTools.get("quire.getTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", taskId: 123 },
         createMockExtra({ quireToken: "token" })
@@ -234,7 +252,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getTask")!;
+      const tool = registeredTools.get("quire.getTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -259,7 +279,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getTask")!;
+      const tool = registeredTools.get("quire.getTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -289,7 +311,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTask")!;
+      const tool = registeredTools.get("quire.createTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", name: "New Task" },
         createMockExtra({ quireToken: "token" })
@@ -317,7 +341,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTask")!;
+      const tool = registeredTools.get("quire.createTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           projectId: "my-project",
@@ -359,7 +385,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTask")!;
+      const tool = registeredTools.get("quire.createTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", name: "Task" },
         createMockExtra({ quireToken: "token" })
@@ -387,7 +415,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateTask")!;
+      const tool = registeredTools.get("quire.updateTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { oid: "TaskOid", name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -411,7 +441,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateTask")!;
+      const tool = registeredTools.get("quire.updateTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { projectId: "my-project", taskId: 123, name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -435,7 +467,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateTask")!;
+      const tool = registeredTools.get("quire.updateTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           oid: "TaskOid",
@@ -479,7 +513,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateTask")!;
+      const tool = registeredTools.get("quire.updateTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -509,7 +545,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteTask")!;
+      const tool = registeredTools.get("quire.deleteTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TaskOid" },
         createMockExtra({ quireToken: "token" })
@@ -533,7 +571,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteTask")!;
+      const tool = registeredTools.get("quire.deleteTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TaskOid" },
         createMockExtra({ quireToken: "token" })
@@ -561,7 +601,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.searchTasks")!;
+      const tool = registeredTools.get("quire.searchTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", keyword: "bug" },
         createMockExtra({ quireToken: "token" })
@@ -591,7 +633,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.searchTasks")!;
+      const tool = registeredTools.get("quire.searchTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           projectId: "my-project",
@@ -631,7 +675,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTaskAfter")!;
+      const tool = registeredTools.get("quire.createTaskAfter");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { taskOid: "ExistingTaskOid", name: "After Task" },
         createMockExtra({ quireToken: "token" })
@@ -660,7 +706,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTaskAfter")!;
+      const tool = registeredTools.get("quire.createTaskAfter");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           taskOid: "TaskOid",
@@ -703,7 +751,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTaskBefore")!;
+      const tool = registeredTools.get("quire.createTaskBefore");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { taskOid: "ExistingTaskOid", name: "Before Task" },
         createMockExtra({ quireToken: "token" })
@@ -734,7 +784,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.searchFolderTasks")!;
+      const tool = registeredTools.get("quire.searchFolderTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { folderId: "my-folder", keyword: "bug" },
         createMockExtra({ quireToken: "token" })
@@ -760,7 +812,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.searchFolderTasks")!;
+      const tool = registeredTools.get("quire.searchFolderTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           folderId: "my-folder",
@@ -800,7 +854,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.searchOrganizationTasks")!;
+      const tool = registeredTools.get("quire.searchOrganizationTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { organizationId: "my-org", keyword: "urgent" },
         createMockExtra({ quireToken: "token" })
@@ -826,7 +882,9 @@ describe("Task Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.searchOrganizationTasks")!;
+      const tool = registeredTools.get("quire.searchOrganizationTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           organizationId: "my-org",

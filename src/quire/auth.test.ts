@@ -3,7 +3,9 @@ import { getQuireAccessToken, QuireAuthError } from "./auth.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 // Store the request handler to simulate HTTP callbacks
-let httpRequestHandler: ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
+let httpRequestHandler:
+  | ((req: IncomingMessage, res: ServerResponse) => void)
+  | null = null;
 
 // Mock the dependencies
 vi.mock("./oauth.js", () => ({
@@ -37,10 +39,12 @@ vi.mock("node:http", () => {
   };
   return {
     default: {
-      createServer: vi.fn((handler: (req: IncomingMessage, res: ServerResponse) => void) => {
-        httpRequestHandler = handler;
-        return mockServer;
-      }),
+      createServer: vi.fn(
+        (handler: (req: IncomingMessage, res: ServerResponse) => void) => {
+          httpRequestHandler = handler;
+          return mockServer;
+        }
+      ),
     },
   };
 });
@@ -281,9 +285,10 @@ describe("getQuireAccessToken", () => {
 
   describe("interactive OAuth flow", () => {
     // Helper to simulate callback request
-    function simulateCallback(
-      url: string
-    ): { writeHead: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> } {
+    function simulateCallback(url: string): {
+      writeHead: ReturnType<typeof vi.fn>;
+      end: ReturnType<typeof vi.fn>;
+    } {
       const mockRes = {
         writeHead: vi.fn(),
         end: vi.fn(),
@@ -437,7 +442,10 @@ describe("getQuireAccessToken", () => {
 
       // Request to wrong path
       const wrongPathRes = simulateCallback("/favicon.ico");
-      expect(wrongPathRes.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+      expect(wrongPathRes.writeHead).toHaveBeenCalledWith(
+        200,
+        expect.any(Object)
+      );
       expect(wrongPathRes.end).toHaveBeenCalled();
 
       // Then complete with correct callback
@@ -449,7 +457,8 @@ describe("getQuireAccessToken", () => {
     it("should handle server errors gracefully", async () => {
       vi.mocked(loadTokens).mockReturnValue(undefined);
 
-      const _authPromise = getQuireAccessToken();
+      // Start auth flow but don't await it - we're just testing server error handling
+      void getQuireAccessToken();
 
       await vi.waitFor(() => {
         expect(httpRequestHandler).not.toBeNull();
@@ -505,9 +514,7 @@ describe("getQuireAccessToken", () => {
         expect(httpRequestHandler).not.toBeNull();
       });
 
-      const mockRes = simulateCallback(
-        "/callback?error=invalid_scope"
-      );
+      const mockRes = simulateCallback("/callback?error=invalid_scope");
 
       await expect(authPromise).rejects.toThrow();
       expect(mockRes.end).toHaveBeenCalled();
@@ -562,7 +569,10 @@ describe("getQuireAccessToken", () => {
 
       // First request to wrong path should show waiting message
       const wrongPathRes = simulateCallback("/wrong-path");
-      expect(wrongPathRes.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+      expect(wrongPathRes.writeHead).toHaveBeenCalledWith(
+        200,
+        expect.any(Object)
+      );
 
       // Complete with valid callback
       simulateCallback("/callback?code=auth-code&state=expected-state");
@@ -610,7 +620,9 @@ describe("getQuireAccessToken", () => {
       };
       if (httpRequestHandler) {
         httpRequestHandler(
-          { url: "/callback?code=auth-code&state=expected-state" } as IncomingMessage,
+          {
+            url: "/callback?code=auth-code&state=expected-state",
+          } as IncomingMessage,
           mockRes as unknown as ServerResponse
         );
       }
@@ -644,7 +656,9 @@ describe("getQuireAccessToken", () => {
       };
       if (httpRequestHandler) {
         httpRequestHandler(
-          { url: "/callback?code=auth-code&state=expected-state" } as IncomingMessage,
+          {
+            url: "/callback?code=auth-code&state=expected-state",
+          } as IncomingMessage,
           mockRes as unknown as ServerResponse
         );
       }
@@ -687,12 +701,16 @@ describe("getQuireAccessToken", () => {
         writeHead: vi.fn(),
         end: vi.fn(),
       };
-      if (httpRequestHandler) {
-        httpRequestHandler(
-          { url: "/callback?code=auth-code&state=expected-state" } as IncomingMessage,
-          mockRes as unknown as ServerResponse
-        );
-      }
+
+      // httpRequestHandler is guaranteed to be non-null after waitFor above
+      expect(httpRequestHandler).not.toBeNull();
+      // TypeScript can't narrow the type due to the mutable variable, so we assert it's non-null
+      httpRequestHandler!(
+        {
+          url: "/callback?code=auth-code&state=expected-state",
+        } as IncomingMessage,
+        mockRes as unknown as ServerResponse
+      );
 
       const result = await authPromise;
       expect(result.source).toBe("interactive");

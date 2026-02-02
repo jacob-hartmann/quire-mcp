@@ -43,7 +43,10 @@ describe("Partner Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -69,7 +72,9 @@ describe("Partner Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.getPartner")!;
+      const tool = registeredTools.get("quire.getPartner");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "PartnerOid" },
         createMockExtra()
@@ -100,7 +105,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getPartner")!;
+      const tool = registeredTools.get("quire.getPartner");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "PartnerOid" },
         createMockExtra({ quireToken: "token" })
@@ -124,7 +131,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getPartner")!;
+      const tool = registeredTools.get("quire.getPartner");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -156,7 +165,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listPartners")!;
+      const tool = registeredTools.get("quire.listPartners");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -181,7 +192,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listPartners")!;
+      const tool = registeredTools.get("quire.listPartners");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -207,7 +220,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listPartners")!;
+      const tool = registeredTools.get("quire.listPartners");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -227,7 +242,9 @@ describe("Partner Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listPartners")!;
+      const tool = registeredTools.get("quire.listPartners");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra()
@@ -252,7 +269,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getPartner")!;
+      const tool = registeredTools.get("quire.getPartner");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "partner-oid" },
         createMockExtra({ quireToken: "token" })
@@ -276,7 +295,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getPartner")!;
+      const tool = registeredTools.get("quire.getPartner");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "partner-oid" },
         createMockExtra({ quireToken: "token" })
@@ -300,7 +321,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getPartner")!;
+      const tool = registeredTools.get("quire.getPartner");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "partner-oid" },
         createMockExtra({ quireToken: "token" })
@@ -324,7 +347,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getPartner")!;
+      const tool = registeredTools.get("quire.getPartner");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "partner-oid" },
         createMockExtra({ quireToken: "token" })
@@ -347,7 +372,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listPartners")!;
+      const tool = registeredTools.get("quire.listPartners");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -370,7 +397,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listPartners")!;
+      const tool = registeredTools.get("quire.listPartners");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -393,7 +422,9 @@ describe("Partner Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listPartners")!;
+      const tool = registeredTools.get("quire.listPartners");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
