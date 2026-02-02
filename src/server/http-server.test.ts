@@ -463,7 +463,14 @@ describe("HTTP Server", () => {
       await startHttpServer(mockGetServer, mockConfig);
 
       expect(helmet.default).toHaveBeenCalledWith({
-        contentSecurityPolicy: false,
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'none'"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+          },
+        },
         crossOriginEmbedderPolicy: false,
       });
     });
