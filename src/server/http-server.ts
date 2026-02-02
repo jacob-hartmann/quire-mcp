@@ -337,6 +337,18 @@ export async function startHttpServer(
         await server.connect(transport as unknown as Transport);
         await transport.handleRequest(req, res, req.body);
         return;
+      } else if (sessionId && !existingSession) {
+        // Client presented a session ID we don't recognize (expired/evicted/restarted).
+        // Per MCP Streamable HTTP spec, respond 404 so the client re-initializes.
+        res.status(404).json({
+          jsonrpc: "2.0",
+          error: {
+            code: JSONRPC_ERROR_INVALID_REQUEST,
+            message: "Session not found",
+          },
+          id: null,
+        });
+        return;
       } else {
         // Invalid request
         res.status(400).json({
@@ -372,11 +384,11 @@ export async function startHttpServer(
 
     const session = sessionId ? sessions.get(sessionId) : undefined;
     if (!sessionId || !session) {
-      res.status(400).json({
+      res.status(sessionId ? 404 : 400).json({
         jsonrpc: "2.0",
         error: {
           code: JSONRPC_ERROR_INVALID_REQUEST,
-          message: "Invalid or missing session ID",
+          message: sessionId ? "Session not found" : "Missing session ID",
         },
         id: null,
       });
@@ -393,11 +405,11 @@ export async function startHttpServer(
     const session = sessionId ? sessions.get(sessionId) : undefined;
 
     if (!sessionId || !session) {
-      res.status(400).json({
+      res.status(sessionId ? 404 : 400).json({
         jsonrpc: "2.0",
         error: {
           code: JSONRPC_ERROR_INVALID_REQUEST,
-          message: "Invalid or missing session ID",
+          message: sessionId ? "Session not found" : "Missing session ID",
         },
         id: null,
       });

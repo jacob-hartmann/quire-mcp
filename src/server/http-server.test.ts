@@ -689,7 +689,7 @@ describe("HTTP Server", () => {
         jsonrpc: "2.0",
         error: {
           code: -32600,
-          message: "Invalid or missing session ID",
+          message: "Missing session ID",
         },
         id: null,
       });
@@ -707,12 +707,12 @@ describe("HTTP Server", () => {
 
       await mcpGetHandler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
         jsonrpc: "2.0",
         error: {
           code: -32600,
-          message: "Invalid or missing session ID",
+          message: "Session not found",
         },
         id: null,
       });
@@ -739,7 +739,7 @@ describe("HTTP Server", () => {
         jsonrpc: "2.0",
         error: {
           code: -32600,
-          message: "Invalid or missing session ID",
+          message: "Missing session ID",
         },
         id: null,
       });

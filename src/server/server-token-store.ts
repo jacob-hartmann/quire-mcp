@@ -22,6 +22,11 @@ export interface PendingAuthRequest {
   codeChallenge: string;
   codeChallengeMethod: "S256" | "plain";
   redirectUri: string;
+  /**
+   * OAuth "state" from the MCP client (e.g., Cursor).
+   * Must be echoed back to the client on the final redirect.
+   */
+  clientState?: string;
   scope: string | undefined;
   createdAt: number;
 }

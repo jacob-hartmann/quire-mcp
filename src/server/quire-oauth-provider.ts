@@ -32,6 +32,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { HttpServerConfig } from "./config.js";
 import {
   getServerTokenStore,
+  type PendingAuthRequest,
   type ServerTokenStore,
 } from "./server-token-store.js";
 import {
@@ -108,21 +109,32 @@ export class QuireProxyOAuthProvider implements OAuthServerProvider {
       return;
     }
 
-    // Store pending request with PKCE params
-    const state = this.tokenStore.storePendingRequest({
+    // Store pending request with PKCE params.
+    // We generate our own "Quire state" for the upstream redirect, but we must
+    // preserve the client's original OAuth state so we can echo it back to the
+    // MCP client on the final redirect.
+    const pendingRequest: Omit<
+      PendingAuthRequest,
+      "createdAt"
+    > = {
       clientId: client.client_id,
       codeChallenge: params.codeChallenge,
       codeChallengeMethod: "S256", // We only support S256
       redirectUri: params.redirectUri,
       scope: params.scopes?.join(" "),
-    });
+    };
+    if (params.state && params.state.length > 0) {
+      pendingRequest.clientState = params.state;
+    }
+
+    const quireState = this.tokenStore.storePendingRequest(pendingRequest);
 
     // Build Quire OAuth URL (no PKCE)
     const quireAuthUrl = new URL(QUIRE_OAUTH_AUTHORIZE_URL);
     quireAuthUrl.searchParams.set("response_type", "code");
     quireAuthUrl.searchParams.set("client_id", this.config.quireClientId);
     quireAuthUrl.searchParams.set("redirect_uri", this.config.quireRedirectUri);
-    quireAuthUrl.searchParams.set("state", state);
+    quireAuthUrl.searchParams.set("state", quireState);
 
     res.redirect(quireAuthUrl.toString());
   }
@@ -343,7 +355,8 @@ export async function handleQuireOAuthCallback(
   { redirectUrl: string } | { error: string; errorDescription: string }
 > {
   // Get pending request
-  const pending = tokenStore.consumePendingRequest(state);
+  const quireState = state;
+  const pending = tokenStore.consumePendingRequest(quireState);
   if (!pending) {
     return {
       error: "invalid_request",
@@ -418,7 +431,13 @@ export async function handleQuireOAuthCallback(
   // Build redirect URL back to MCP client
   const redirectUrl = new URL(pending.redirectUri);
   redirectUrl.searchParams.set("code", ourCode);
-  redirectUrl.searchParams.set("state", state);
+  // Echo back the client's original OAuth state (Cursor validates this).
+  // If none was provided, fall back to our upstream state.
+  if (pending.clientState && pending.clientState.length > 0) {
+    redirectUrl.searchParams.set("state", pending.clientState);
+  } else {
+    redirectUrl.searchParams.set("state", quireState);
+  }
 
   return { redirectUrl: redirectUrl.toString() };
 }

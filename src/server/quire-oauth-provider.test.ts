@@ -547,6 +547,7 @@ describe("handleQuireOAuthCallback", () => {
       codeChallenge: "challenge",
       codeChallengeMethod: "S256",
       redirectUri: "http://localhost:8080/callback",
+      clientState: "client-state",
       scope: "read",
     });
 
@@ -570,7 +571,7 @@ describe("handleQuireOAuthCallback", () => {
     if ("redirectUrl" in result) {
       expect(result.redirectUrl).toContain("http://localhost:8080/callback");
       expect(result.redirectUrl).toContain("code=");
-      expect(result.redirectUrl).toContain("state=");
+      expect(result.redirectUrl).toContain("state=client-state");
     }
   });
 
@@ -580,6 +581,7 @@ describe("handleQuireOAuthCallback", () => {
       codeChallenge: "challenge",
       codeChallengeMethod: "S256",
       redirectUri: "http://localhost:8080/callback",
+      clientState: "client-state",
       scope: undefined,
     });
 
@@ -610,6 +612,7 @@ describe("handleQuireOAuthCallback", () => {
       codeChallenge: "challenge",
       codeChallengeMethod: "S256",
       redirectUri: "http://localhost:8080/callback",
+      clientState: "client-state",
       scope: undefined,
     });
 
