@@ -608,7 +608,6 @@ describe("getQuireAccessToken", () => {
         writeHead: vi.fn(),
         end: vi.fn(),
       };
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (httpRequestHandler) {
         httpRequestHandler(
           { url: "/callback?code=auth-code&state=expected-state" } as IncomingMessage,
@@ -688,7 +687,6 @@ describe("getQuireAccessToken", () => {
         writeHead: vi.fn(),
         end: vi.fn(),
       };
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (httpRequestHandler) {
         httpRequestHandler(
           { url: "/callback?code=auth-code&state=expected-state" } as IncomingMessage,

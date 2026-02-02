@@ -116,7 +116,13 @@ function createMockResponse(): MockResponse {
 
 // Create mock app inside the mock factory to avoid hoisting issues
 vi.mock("express", () => {
-  const createMockApp = () => {
+  const createMockApp = (): {
+    use: Mock;
+    get: Mock;
+    post: Mock;
+    delete: Mock;
+    listen: Mock;
+  } => {
     const app = {
       use: vi.fn(() => app),
       get: vi.fn((...args: unknown[]) => {
@@ -125,7 +131,10 @@ vi.mock("express", () => {
         if (!registeredRoutes.has("GET")) {
           registeredRoutes.set("GET", new Map());
         }
-        registeredRoutes.get("GET")!.set(path, handler);
+        const getRoutes = registeredRoutes.get("GET");
+        if (getRoutes) {
+          getRoutes.set(path, handler);
+        }
         return app;
       }),
       post: vi.fn((...args: unknown[]) => {
@@ -134,7 +143,10 @@ vi.mock("express", () => {
         if (!registeredRoutes.has("POST")) {
           registeredRoutes.set("POST", new Map());
         }
-        registeredRoutes.get("POST")!.set(path, handler);
+        const postRoutes = registeredRoutes.get("POST");
+        if (postRoutes) {
+          postRoutes.set(path, handler);
+        }
         return app;
       }),
       delete: vi.fn((...args: unknown[]) => {
@@ -143,7 +155,10 @@ vi.mock("express", () => {
         if (!registeredRoutes.has("DELETE")) {
           registeredRoutes.set("DELETE", new Map());
         }
-        registeredRoutes.get("DELETE")!.set(path, handler);
+        const deleteRoutes = registeredRoutes.get("DELETE");
+        if (deleteRoutes) {
+          deleteRoutes.set(path, handler);
+        }
         return app;
       }),
       listen: vi.fn(
@@ -179,7 +194,13 @@ vi.mock("express-rate-limit", () => ({
 }));
 
 vi.mock("@modelcontextprotocol/sdk/server/express.js", () => {
-  const createMockApp = () => {
+  const createMockApp = (): {
+    use: Mock;
+    get: Mock;
+    post: Mock;
+    delete: Mock;
+    listen: Mock;
+  } => {
     const app = {
       use: vi.fn((...args: unknown[]) => {
         // Capture CORS middleware (function with 3 args at path-less position)
@@ -220,7 +241,10 @@ vi.mock("@modelcontextprotocol/sdk/server/express.js", () => {
         if (!registeredRoutes.has("GET")) {
           registeredRoutes.set("GET", new Map());
         }
-        registeredRoutes.get("GET")!.set(path, handler);
+        const getRoutes = registeredRoutes.get("GET");
+        if (getRoutes) {
+          getRoutes.set(path, handler);
+        }
 
         if (path === "/oauth/callback") {
           oauthCallbackHandler = handler;
@@ -236,7 +260,10 @@ vi.mock("@modelcontextprotocol/sdk/server/express.js", () => {
         if (!registeredRoutes.has("POST")) {
           registeredRoutes.set("POST", new Map());
         }
-        registeredRoutes.get("POST")!.set(path, handler);
+        const postRoutes = registeredRoutes.get("POST");
+        if (postRoutes) {
+          postRoutes.set(path, handler);
+        }
 
         if (path === "/mcp") {
           mcpPostHandler = handler;
@@ -249,7 +276,10 @@ vi.mock("@modelcontextprotocol/sdk/server/express.js", () => {
         if (!registeredRoutes.has("DELETE")) {
           registeredRoutes.set("DELETE", new Map());
         }
-        registeredRoutes.get("DELETE")!.set(path, handler);
+        const deleteRoutes = registeredRoutes.get("DELETE");
+        if (deleteRoutes) {
+          deleteRoutes.set(path, handler);
+        }
 
         if (path === "/mcp") {
           mcpDeleteHandler = handler;

@@ -332,4 +332,102 @@ describe("Tag Tools", () => {
       expect(isErrorResponse(result)).toBe(true);
     });
   });
+
+  describe("authentication failures", () => {
+    it("should return auth error for getTag", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.getTag")!;
+      const result = (await tool.handler(
+        { oid: "TagOid" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for createTag", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.createTag")!;
+      const result = (await tool.handler(
+        { projectId: "my-project", name: "Tag" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for updateTag", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.updateTag")!;
+      const result = (await tool.handler(
+        { oid: "TagOid", name: "Updated" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for deleteTag", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.deleteTag")!;
+      const result = (await tool.handler(
+        { oid: "TagOid" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+  });
+
+  describe("API error handling", () => {
+    it("should handle listTags API error", async () => {
+      const mockClient = createMockClient({
+        listTags: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listTags")!;
+      const result = (await tool.handler(
+        { projectId: "my-project" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle updateTag API error", async () => {
+      const mockClient = createMockClient({
+        updateTag: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateTag")!;
+      const result = (await tool.handler(
+        { oid: "TagOid", name: "Updated" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+  });
 });

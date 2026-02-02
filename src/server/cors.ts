@@ -24,7 +24,7 @@ const CORS_ALLOWED_PATHS = [
  * - allowed "/authorize" matches "/authorize" and "/authorize/anything"
  * - allowed "/authorize" does NOT match "/authorize-admin"
  */
-function matchesAllowedPathBoundary(requestPath: string, allowedPath: string) {
+function matchesAllowedPathBoundary(requestPath: string, allowedPath: string): boolean {
   if (requestPath === allowedPath) return true;
   if (allowedPath.endsWith("/")) return requestPath.startsWith(allowedPath);
   return requestPath.startsWith(`${allowedPath}/`);

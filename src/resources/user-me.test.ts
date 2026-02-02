@@ -48,7 +48,14 @@ describe("registerUserMeResource", () => {
   });
 
   it("should register user-me resource", () => {
-    expect(server.registerResource).toHaveBeenCalledTimes(1);
+    expect(server.registerResource).toHaveBeenCalledWith(
+      "user-me",
+      "quire://user/me",
+      expect.objectContaining({
+        description: expect.any(String),
+      }),
+      expect.any(Function)
+    );
     expect(registeredResources.has("user-me")).toBe(true);
     expect(registeredResources.get("user-me")?.uri).toBe("quire://user/me");
   });
@@ -73,7 +80,8 @@ describe("registerUserMeResource", () => {
         mockClient as unknown as ReturnType<typeof getQuireClientOrThrow>
       );
 
-      const resource = registeredResources.get("user-me")!;
+      const resource = registeredResources.get("user-me");
+      expect(resource).toBeDefined();
       const result = (await resource.handler("quire://user/me", {})) as {
         contents: {
           uri: string;
@@ -100,7 +108,8 @@ describe("registerUserMeResource", () => {
         mockClient as unknown as ReturnType<typeof getQuireClientOrThrow>
       );
 
-      const resource = registeredResources.get("user-me")!;
+      const resource = registeredResources.get("user-me");
+      expect(resource).toBeDefined();
 
       await expect(resource.handler("quire://user/me", {})).rejects.toThrow(
         "Failed to fetch user: UNAUTHORIZED - Invalid token"
@@ -112,7 +121,8 @@ describe("registerUserMeResource", () => {
         new Error("Authentication required")
       );
 
-      const resource = registeredResources.get("user-me")!;
+      const resource = registeredResources.get("user-me");
+      expect(resource).toBeDefined();
 
       await expect(resource.handler("quire://user/me", {})).rejects.toThrow(
         "Authentication required"
