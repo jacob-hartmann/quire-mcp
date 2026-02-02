@@ -144,5 +144,99 @@ describe("token-store", () => {
 
       expect(writeFileSync).not.toHaveBeenCalled();
     });
+
+    it("should handle write errors gracefully", () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(writeFileSync).mockImplementation(() => {
+        throw new Error("Write failed");
+      });
+
+      // Should not throw
+      expect(() => clearTokens()).not.toThrow();
+    });
+  });
+
+  describe("saveTokens error handling", () => {
+    it("should throw when write fails", () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(writeFileSync).mockImplementation(() => {
+        throw new Error("Write failed");
+      });
+
+      expect(() => saveTokens({ accessToken: "test" })).toThrow("Write failed");
+    });
+
+    it("should throw when mkdir fails", () => {
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(mkdirSync).mockImplementation(() => {
+        throw new Error("Mkdir failed");
+      });
+
+      expect(() => saveTokens({ accessToken: "test" })).toThrow("Mkdir failed");
+    });
+  });
+
+  describe("getDefaultStoreDir platform handling", () => {
+    const originalPlatform = process.platform;
+
+    afterEach(() => {
+      Object.defineProperty(process, "platform", {
+        value: originalPlatform,
+      });
+    });
+
+    it("should use APPDATA on Windows when available", () => {
+      Object.defineProperty(process, "platform", { value: "win32" });
+      process.env["APPDATA"] = "C:\\Users\\Test\\AppData\\Roaming";
+      delete process.env["QUIRE_TOKEN_STORE_PATH"];
+
+      const path = getTokenStorePath();
+
+      expect(path).toContain("quire-mcp");
+      expect(path).toContain("tokens.json");
+    });
+
+    it("should fallback when APPDATA not set on Windows", () => {
+      Object.defineProperty(process, "platform", { value: "win32" });
+      delete process.env["APPDATA"];
+      delete process.env["QUIRE_TOKEN_STORE_PATH"];
+
+      const path = getTokenStorePath();
+
+      expect(path).toContain("quire-mcp");
+      expect(path).toContain("tokens.json");
+    });
+
+    it("should use Library/Application Support on macOS", () => {
+      Object.defineProperty(process, "platform", { value: "darwin" });
+      delete process.env["QUIRE_TOKEN_STORE_PATH"];
+
+      const path = getTokenStorePath();
+
+      expect(path).toContain("quire-mcp");
+      expect(path).toContain("tokens.json");
+    });
+
+    it("should use XDG_CONFIG_HOME on Linux when available", () => {
+      Object.defineProperty(process, "platform", { value: "linux" });
+      process.env["XDG_CONFIG_HOME"] = "/home/test/.config";
+      delete process.env["QUIRE_TOKEN_STORE_PATH"];
+
+      const path = getTokenStorePath();
+
+      expect(path).toContain("quire-mcp");
+      expect(path).toContain("tokens.json");
+    });
+
+    it("should fallback to .config on Linux when XDG_CONFIG_HOME not set", () => {
+      Object.defineProperty(process, "platform", { value: "linux" });
+      delete process.env["XDG_CONFIG_HOME"];
+      delete process.env["QUIRE_TOKEN_STORE_PATH"];
+
+      const path = getTokenStorePath();
+
+      expect(path).toContain("quire-mcp");
+      expect(path).toContain("tokens.json");
+    });
   });
 });
