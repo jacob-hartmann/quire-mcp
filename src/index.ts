@@ -21,6 +21,7 @@
  * @see https://quire.io/dev/api/
  */
 
+import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
@@ -29,7 +30,11 @@ import { registerResources } from "./resources/index.js";
 import { registerPrompts } from "./prompts/index.js";
 
 const SERVER_NAME = "quire-mcp";
-const SERVER_VERSION = "0.1.0";
+
+// Read version from package.json to keep it in sync
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json") as { version: string };
+const SERVER_VERSION = packageJson.version;
 
 /**
  * Start the server in stdio mode

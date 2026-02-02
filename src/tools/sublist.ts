@@ -7,57 +7,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getQuireClient } from "../quire/client-factory.js";
-
-interface ToolTextContent {
-  type: "text";
-  text: string;
-}
-
-interface ToolErrorResponse {
-  [x: string]: unknown;
-  isError: true;
-  content: ToolTextContent[];
-}
-
-/**
- * Format error response for MCP tools
- */
-function formatError(error: {
-  code: string;
-  message: string;
-}): ToolErrorResponse {
-  let errorMessage = error.message;
-
-  switch (error.code) {
-    case "UNAUTHORIZED":
-      errorMessage =
-        "Your access token is invalid or expired. " +
-        "Delete the cached tokens and re-authorize via OAuth.";
-      break;
-    case "FORBIDDEN":
-      errorMessage =
-        "Your access token does not have permission to access this resource.";
-      break;
-    case "NOT_FOUND":
-      errorMessage = "The requested sublist was not found.";
-      break;
-    case "RATE_LIMITED":
-      errorMessage =
-        "You have exceeded Quire's rate limit. " +
-        "Please wait a moment before trying again.";
-      break;
-  }
-
-  return {
-    isError: true,
-    content: [
-      {
-        type: "text" as const,
-        text: `Quire API Error (${error.code}): ${errorMessage}`,
-      },
-    ],
-  };
-}
+import {
+  formatError,
+  formatAuthError,
+  formatSuccess,
+  formatMessage,
+  formatValidationError,
+  buildParams,
+} from "./utils.js";
 
 /**
  * Register all sublist tools with the MCP server
@@ -82,37 +39,21 @@ export function registerSublistTools(server: McpServer): void {
     async ({ ownerType, ownerId, name, description }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      const params: { name: string; description?: string } = { name };
-      if (description !== undefined) params.description = description;
+      const params = buildParams({ name, description });
 
       const result = await clientResult.client.createSublist(
         ownerType,
         ownerId,
-        params
+        params as { name: string; description?: string }
       );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "sublist");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -145,63 +86,26 @@ export function registerSublistTools(server: McpServer): void {
     async ({ oid, ownerType, ownerId, sublistId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Validate input combinations
-      if (!oid && (!ownerType || !ownerId || !sublistId)) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'",
-            },
-          ],
-        };
-      }
-
+      // Get sublist by OID or by ownerType + ownerId + sublistId
       let result;
       if (oid) {
         result = await clientResult.client.getSublist(oid);
       } else if (ownerType && ownerId && sublistId) {
-        result = await clientResult.client.getSublist(
-          ownerType,
-          ownerId,
-          sublistId
-        );
+        result = await clientResult.client.getSublist(ownerType, ownerId, sublistId);
       } else {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Invalid parameters",
-            },
-          ],
-        };
+        return formatValidationError(
+          "Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'"
+        );
       }
 
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "sublist");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -222,30 +126,15 @@ export function registerSublistTools(server: McpServer): void {
     async ({ ownerType, ownerId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.listSublists(ownerType, ownerId);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "sublist");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -284,34 +173,12 @@ export function registerSublistTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Validate input combinations
-      if (!oid && (!ownerType || !ownerId || !sublistId)) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'",
-            },
-          ],
-        };
-      }
+      const params = buildParams({ name, description });
 
-      const params: { name?: string; description?: string } = {};
-      if (name !== undefined) params.name = name;
-      if (description !== undefined) params.description = description;
-
+      // Update sublist by OID or by ownerType + ownerId + sublistId
       let result;
       if (oid) {
         result = await clientResult.client.updateSublist(oid, params);
@@ -323,29 +190,16 @@ export function registerSublistTools(server: McpServer): void {
           params
         );
       } else {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Invalid parameters",
-            },
-          ],
-        };
+        return formatValidationError(
+          "Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'"
+        );
       }
 
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "sublist");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -379,30 +233,10 @@ export function registerSublistTools(server: McpServer): void {
     async ({ oid, ownerType, ownerId, sublistId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Validate input combinations
-      if (!oid && (!ownerType || !ownerId || !sublistId)) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'",
-            },
-          ],
-        };
-      }
-
+      // Delete sublist by OID or by ownerType + ownerId + sublistId
       let result;
       if (oid) {
         result = await clientResult.client.deleteSublist(oid);
@@ -413,30 +247,17 @@ export function registerSublistTools(server: McpServer): void {
           sublistId
         );
       } else {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Invalid parameters",
-            },
-          ],
-        };
+        return formatValidationError(
+          "Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'sublistId'"
+        );
       }
 
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "sublist");
       }
 
       const identifier = oid ?? `${ownerType}/${ownerId}/${sublistId}`;
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Sublist ${identifier} deleted successfully.`,
-          },
-        ],
-      };
+      return formatMessage(`Sublist ${identifier} deleted successfully.`);
     }
   );
 }

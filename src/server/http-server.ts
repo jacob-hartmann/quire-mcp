@@ -27,12 +27,14 @@ import {
   handleQuireOAuthCallback,
 } from "./quire-oauth-provider.js";
 import { getServerTokenStore } from "./server-token-store.js";
+import { isCorsAllowedPath } from "./cors.js";
 import {
   SESSION_ID_DISPLAY_LENGTH,
   JSONRPC_ERROR_INVALID_REQUEST,
   JSONRPC_ERROR_INTERNAL,
 } from "../constants.js";
 import { escapeHtml } from "../utils/html.js";
+import { LRUCache } from "../utils/lru-cache.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -49,6 +51,9 @@ const RATE_LIMIT_MAX = 100;
 
 /** Rate limit window in milliseconds (1 minute) */
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+/** Maximum number of concurrent sessions to prevent memory exhaustion */
+const MAX_SESSIONS = 1000;
 
 // ---------------------------------------------------------------------------
 // HTTP Server
@@ -109,15 +114,7 @@ export async function startHttpServer(
     // Allow CORS for OAuth discovery and flow endpoints
     // mcpAuthRouter mounts at root: /authorize, /token, /register
     // Our custom callback is at /oauth/callback
-    const allowedPaths = [
-      "/.well-known/oauth-authorization-server",
-      "/.well-known/oauth-protected-resource",
-      "/authorize",
-      "/token",
-      "/register",
-      "/oauth/callback",
-    ];
-    const isAllowed = allowedPaths.some((path) => req.path.startsWith(path));
+    const isAllowed = isCorsAllowedPath(req.path);
 
     if (isAllowed) {
       res.setHeader("Access-Control-Allow-Origin", origin);
@@ -140,6 +137,7 @@ export async function startHttpServer(
 
     // Block cross-origin requests to /mcp endpoint
     res.status(403).json({ error: "Cross-origin requests not allowed" });
+    return;
   });
 
   // Cache-Control headers for OAuth and MCP endpoints
@@ -163,12 +161,6 @@ export async function startHttpServer(
 
   // Parse JSON bodies
   app.use(express.json());
-
-  // Debug: log all incoming requests
-  app.use((req, _res, next) => {
-    console.error(`[quire-mcp] ${req.method} ${req.path}`);
-    next();
-  });
 
   // Mount OAuth auth router (AS metadata, authorize, token, register endpoints)
   app.use(
@@ -246,21 +238,42 @@ export async function startHttpServer(
   });
 
   // Create session-to-transport map for stateful connections with activity tracking
-  const sessions: Record<string, SessionInfo> = {};
+  // Uses LRU cache to prevent memory exhaustion from spam attacks
+  const sessions = new LRUCache<SessionInfo>({
+    maxSize: MAX_SESSIONS,
+    onEvict: (sessionId, session) => {
+      console.error(
+        `[quire-mcp] Evicting session ${sessionId.slice(0, SESSION_ID_DISPLAY_LENGTH)} (max sessions reached)`
+      );
+      try {
+        session.transport.close().catch((err: unknown) => {
+          console.error(
+            `[quire-mcp] Error closing evicted session:`,
+            err instanceof Error ? err.message : err
+          );
+        });
+      } catch {
+        // Ignore close errors on eviction
+      }
+    },
+  });
 
   // Get resource metadata URL for WWW-Authenticate header
   const resourceMetadataUrl = `${issuerUrl}/.well-known/oauth-protected-resource`;
 
   // Helper to update session activity
   const touchSession = (sessionId: string): void => {
-    if (sessions[sessionId]) {
-      sessions[sessionId].lastActivity = Date.now();
+    const session = sessions.get(sessionId);
+    if (session) {
+      session.lastActivity = Date.now();
+      // Re-set to update LRU order
+      sessions.set(sessionId, session);
     }
   };
 
   // Helper to clean up a session
   const cleanupSession = (sessionId: string): void => {
-    const session = sessions[sessionId];
+    const session = sessions.get(sessionId);
     if (session) {
       try {
         session.transport.close().catch((err: unknown) => {
@@ -275,8 +288,7 @@ export async function startHttpServer(
           err instanceof Error ? err.message : err
         );
       }
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete sessions[sessionId];
+      sessions.delete(sessionId);
     }
   };
 
@@ -287,28 +299,28 @@ export async function startHttpServer(
     try {
       let transport: StreamableHTTPServerTransport;
 
-      if (sessionId && sessions[sessionId]) {
+      const existingSession = sessionId ? sessions.get(sessionId) : undefined;
+      if (sessionId && existingSession) {
         // Reuse existing transport and update activity
-        transport = sessions[sessionId].transport;
+        transport = existingSession.transport;
         touchSession(sessionId);
       } else if (!sessionId && isInitializeRequest(req.body)) {
         // New initialization request
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (sid) => {
-            sessions[sid] = {
+            sessions.set(sid, {
               transport,
               lastActivity: Date.now(),
-            };
+            });
           },
         });
 
         // Clean up on close
         transport.onclose = () => {
           const sid = transport.sessionId;
-          if (sid && Object.hasOwn(sessions, sid)) {
-            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-            delete sessions[sid];
+          if (sid && sessions.has(sid)) {
+            sessions.delete(sid);
           }
         };
 
@@ -351,7 +363,8 @@ export async function startHttpServer(
   const mcpGetHandler: express.RequestHandler = async (req, res) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-    if (!sessionId || !sessions[sessionId]) {
+    const session = sessionId ? sessions.get(sessionId) : undefined;
+    if (!sessionId || !session) {
       res.status(400).json({
         jsonrpc: "2.0",
         error: {
@@ -364,15 +377,15 @@ export async function startHttpServer(
     }
 
     touchSession(sessionId);
-    const transport = sessions[sessionId].transport;
-    await transport.handleRequest(req, res);
+    await session.transport.handleRequest(req, res);
   };
 
   // MCP DELETE handler (session termination)
   const mcpDeleteHandler: express.RequestHandler = async (req, res) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
+    const session = sessionId ? sessions.get(sessionId) : undefined;
 
-    if (!sessionId || !sessions[sessionId]) {
+    if (!sessionId || !session) {
       res.status(400).json({
         jsonrpc: "2.0",
         error: {
@@ -385,8 +398,7 @@ export async function startHttpServer(
     }
 
     try {
-      const transport = sessions[sessionId].transport;
-      await transport.handleRequest(req, res);
+      await session.transport.handleRequest(req, res);
     } catch (error) {
       console.error("[quire-mcp] Error handling session termination:", error);
       if (!res.headersSent) {
@@ -419,7 +431,7 @@ export async function startHttpServer(
 
     // Also clean up idle sessions
     const now = Date.now();
-    for (const [sessionId, session] of Object.entries(sessions)) {
+    for (const [sessionId, session] of sessions.entries()) {
       if (now - session.lastActivity > SESSION_IDLE_TIMEOUT_MS) {
         console.error(
           `[quire-mcp] Closing idle session ${sessionId.slice(0, SESSION_ID_DISPLAY_LENGTH)}...`
@@ -444,5 +456,44 @@ export async function startHttpServer(
     });
 
     server.on("error", reject);
+
+    // Graceful shutdown handler
+    const shutdown = (signal: string): void => {
+      console.error(`[quire-mcp] Received ${signal}, shutting down gracefully...`);
+
+      // Stop accepting new connections
+      server.close(() => {
+        console.error("[quire-mcp] HTTP server closed");
+      });
+
+      // Clear the cleanup interval
+      clearInterval(cleanupInterval);
+
+      // Close all active sessions
+      console.error(`[quire-mcp] Closing ${sessions.size} active session(s)...`);
+      for (const [sessionId, session] of sessions.entries()) {
+        try {
+          session.transport.close().catch((err: unknown) => {
+            console.error(
+              `[quire-mcp] Error closing session ${sessionId.slice(0, SESSION_ID_DISPLAY_LENGTH)}:`,
+              err instanceof Error ? err.message : err
+            );
+          });
+        } catch {
+          // Ignore close errors during shutdown
+        }
+      }
+      sessions.clear();
+
+      // Give connections time to close gracefully, then force exit
+      setTimeout(() => {
+        console.error("[quire-mcp] Shutdown complete");
+        process.exit(0);
+      }, 5000);
+    };
+
+    // Handle termination signals
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
   });
 }
