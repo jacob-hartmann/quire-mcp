@@ -411,4 +411,159 @@ describe("Sublist Tools", () => {
       expect(isErrorResponse(result)).toBe(true);
     });
   });
+
+  describe("authentication failures", () => {
+    it("should return auth error for getSublist", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.getSublist")!;
+      const result = (await tool.handler(
+        { oid: "SublistOid" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for listSublists", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.listSublists")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for updateSublist", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.updateSublist")!;
+      const result = (await tool.handler(
+        { oid: "SublistOid", name: "Updated" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for deleteSublist", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.deleteSublist")!;
+      const result = (await tool.handler(
+        { oid: "SublistOid" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+  });
+
+  describe("API error handling", () => {
+    it("should handle createSublist API error", async () => {
+      const mockClient = createMockClient({
+        createSublist: vi.fn().mockResolvedValueOnce(mockErrors.forbidden()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.createSublist")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project", name: "Sublist" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle getSublist API error", async () => {
+      const mockClient = createMockClient({
+        getSublist: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getSublist")!;
+      const result = (await tool.handler(
+        { oid: "nonexistent" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle listSublists API error", async () => {
+      const mockClient = createMockClient({
+        listSublists: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listSublists")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle updateSublist API error", async () => {
+      const mockClient = createMockClient({
+        updateSublist: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateSublist")!;
+      const result = (await tool.handler(
+        { oid: "SublistOid", name: "Updated" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle deleteSublist API error", async () => {
+      const mockClient = createMockClient({
+        deleteSublist: vi.fn().mockResolvedValueOnce(mockErrors.serverError()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.deleteSublist")!;
+      const result = (await tool.handler(
+        { oid: "SublistOid" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+  });
 });

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   QuireClient,
   createClientFromEnv,
-  createClientFromAuth,
+  createClientFromAuth as _createClientFromAuth,
 } from "./client.js";
 import { QuireClientError } from "./types.js";
 
@@ -348,6 +348,7 @@ describe("QuireClient", () => {
         expect.stringContaining("/task/id/my-project"),
         expect.objectContaining({
           method: "POST",
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           headers: expect.objectContaining({
             Authorization: "Bearer test-token",
             Accept: "application/json",
@@ -641,6 +642,7 @@ describe("QuireClient", () => {
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining("/project/export-csv/id/my-project"),
           expect.objectContaining({
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             headers: expect.objectContaining({
               Accept: "text/csv",
             }),
@@ -2699,6 +2701,7 @@ describe("QuireClient", () => {
           expect.stringContaining("/task/attach/TaskOid123/file.txt"),
           expect.objectContaining({
             method: "POST",
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             headers: expect.objectContaining({
               Authorization: "Bearer test-token",
               "Content-Type": "application/octet-stream",
@@ -2724,6 +2727,7 @@ describe("QuireClient", () => {
         expect(fetch).toHaveBeenCalledWith(
           expect.any(String),
           expect.objectContaining({
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             headers: expect.objectContaining({
               "Content-Type": "application/json",
             }),
@@ -2853,6 +2857,7 @@ describe("QuireClient", () => {
           expect.stringContaining("/comment/attach/CommentOid123/file.txt"),
           expect.objectContaining({
             method: "POST",
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             headers: expect.objectContaining({
               Authorization: "Bearer test-token",
               "Content-Type": "application/octet-stream",
@@ -2878,6 +2883,7 @@ describe("QuireClient", () => {
         expect(fetch).toHaveBeenCalledWith(
           expect.any(String),
           expect.objectContaining({
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             headers: expect.objectContaining({
               "Content-Type": "image/png",
             }),

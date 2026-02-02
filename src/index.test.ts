@@ -21,12 +21,8 @@ vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
 vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => {
   return {
     // Empty class for mock - no methods needed for these tests
-    StdioServerTransport: class MockStdioServerTransport {
-      // eslint-disable-next-line @typescript-eslint/no-useless-constructor
-      constructor() {
-        // Mock transport does not need implementation
-      }
-    },
+    // eslint-disable-next-line @typescript-eslint/no-extraneous-class
+    StdioServerTransport: class MockStdioServerTransport {},
   };
 });
 

@@ -332,4 +332,102 @@ describe("Status Tools", () => {
       expect(isErrorResponse(result)).toBe(true);
     });
   });
+
+  describe("authentication failures", () => {
+    it("should return auth error for getStatus", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.getStatus")!;
+      const result = (await tool.handler(
+        { projectId: "my-project", value: 50 },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for createStatus", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.createStatus")!;
+      const result = (await tool.handler(
+        { projectId: "my-project", name: "Status" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for updateStatus", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.updateStatus")!;
+      const result = (await tool.handler(
+        { projectId: "my-project", value: 50, name: "Updated" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for deleteStatus", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.deleteStatus")!;
+      const result = (await tool.handler(
+        { projectId: "my-project", value: 50 },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+  });
+
+  describe("API error handling", () => {
+    it("should handle listStatuses API error", async () => {
+      const mockClient = createMockClient({
+        listStatuses: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listStatuses")!;
+      const result = (await tool.handler(
+        { projectId: "my-project" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle updateStatus API error", async () => {
+      const mockClient = createMockClient({
+        updateStatus: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateStatus")!;
+      const result = (await tool.handler(
+        { projectId: "my-project", value: 50, name: "Updated" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+  });
 });

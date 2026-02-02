@@ -4,15 +4,21 @@
  * Tests the HTTP server routes using supertest for real HTTP requests.
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+
 import {
   describe,
   it,
   expect,
   vi,
   beforeEach,
-  afterEach,
+  afterEach as _afterEach,
   beforeAll,
-  afterAll,
+  afterAll as _afterAll,
 } from "vitest";
 import express, { type Express } from "express";
 import request from "supertest";
@@ -76,7 +82,7 @@ vi.mock(
 
 const mockTransport = {
   sessionId: undefined as string | undefined,
-  handleRequest: vi.fn().mockImplementation(async (req, res) => {
+  handleRequest: vi.fn().mockImplementation((req, res) => {
     res.json({ jsonrpc: "2.0", result: {}, id: 1 });
   }),
   close: vi.fn().mockResolvedValue(undefined),
@@ -88,7 +94,7 @@ vi.mock("@modelcontextprotocol/sdk/server/streamableHttp.js", () => ({
     const transport = { ...mockTransport };
     if (options?.onsessioninitialized) {
       // Immediately call with a new session ID
-      transport.sessionId = "test-session-" + Date.now();
+      transport.sessionId = `test-session-${Date.now()}`;
       setTimeout(() => options.onsessioninitialized(transport.sessionId), 0);
     }
     return transport;
@@ -101,7 +107,6 @@ vi.mock("@modelcontextprotocol/sdk/types.js", () => ({
 
 vi.mock("./quire-oauth-provider.js", () => ({
   QuireProxyOAuthProvider: class MockQuireProxyOAuthProvider {
-    constructor(_config: unknown) {}
     verifyToken = vi.fn().mockResolvedValue({ valid: true });
   },
   handleQuireOAuthCallback: vi.fn(),
@@ -121,8 +126,8 @@ import { isCorsAllowedPath } from "./cors.js";
 import { LRUCache } from "../utils/lru-cache.js";
 import {
   JSONRPC_ERROR_INVALID_REQUEST,
-  JSONRPC_ERROR_INTERNAL,
-  SESSION_ID_DISPLAY_LENGTH,
+  JSONRPC_ERROR_INTERNAL as _JSONRPC_ERROR_INTERNAL,
+  SESSION_ID_DISPLAY_LENGTH as _SESSION_ID_DISPLAY_LENGTH,
 } from "../constants.js";
 
 // Create a test app similar to what startHttpServer creates
@@ -255,7 +260,7 @@ function createTestApp(): Express {
       return;
     }
 
-    res.redirect(result?.redirectUrl || "/");
+    res.redirect(result?.redirectUrl ?? "/");
   });
 
   // Session storage
@@ -289,15 +294,17 @@ function createTestApp(): Express {
 
     if (sessionId && sessions.has(sessionId)) {
       // Existing session
-      const session = sessions.get(sessionId)!;
-      session.lastActivity = Date.now();
+      const session = sessions.get(sessionId);
+      if (session) {
+        session.lastActivity = Date.now();
+      }
       res.json({ jsonrpc: "2.0", result: { existing: true }, id: req.body?.id });
       return;
     }
 
     if (!sessionId && isInitialize) {
       // New session
-      const newSessionId = "session-" + Date.now();
+      const newSessionId = `session-${Date.now()}`;
       sessions.set(newSessionId, {
         transport: mockTransport,
         lastActivity: Date.now(),
