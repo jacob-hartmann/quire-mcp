@@ -54,7 +54,7 @@ jobs:
         run: pnpm build
 
       - name: Generate SBOM (CycloneDX JSON)
-        uses: anchore/sbom-action@61119d458adab75f756bc0b9e4bde25725f86a7a # v0.17.2
+        uses: anchore/sbom-action@deef08a0db64bfad603422135db61477b16cef56 # v0.22.1
         with:
           path: .
           format: cyclonedx-json
