@@ -59,8 +59,7 @@ describe("Attachment Tools", () => {
   });
 
   it("should register all attachment tools", () => {
-    const registerToolFn = server.registerTool.bind(server);
-    expect(registerToolFn).toHaveBeenCalledTimes(2);
+    expect(server.registerTool).toHaveBeenCalledTimes(2);
     expect(registeredTools.has("quire.uploadTaskAttachment")).toBe(true);
     expect(registeredTools.has("quire.uploadCommentAttachment")).toBe(true);
   });
@@ -123,8 +122,7 @@ describe("Attachment Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("file.txt");
-      const uploadFn = mockClient.uploadTaskAttachment.bind(mockClient);
-      expect(uploadFn).toHaveBeenCalledWith(
+      expect(mockClient.uploadTaskAttachment).toHaveBeenCalledWith(
         "TaskOid",
         "file.txt",
         "Hello",
@@ -160,8 +158,7 @@ describe("Attachment Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      const uploadFn = mockClient.uploadTaskAttachment.bind(mockClient);
-      expect(uploadFn).toHaveBeenCalledWith(
+      expect(mockClient.uploadTaskAttachment).toHaveBeenCalledWith(
         "TaskOid",
         "data.json",
         '{"key":"value"}',
@@ -286,8 +283,7 @@ describe("Attachment Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("image.png");
-      const uploadFn = mockClient.uploadCommentAttachment.bind(mockClient);
-      expect(uploadFn).toHaveBeenCalledWith(
+      expect(mockClient.uploadCommentAttachment).toHaveBeenCalledWith(
         "CommentOid",
         "image.png",
         "binary",
@@ -323,8 +319,7 @@ describe("Attachment Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      const uploadFn = mockClient.uploadCommentAttachment.bind(mockClient);
-      expect(uploadFn).toHaveBeenCalledWith(
+      expect(mockClient.uploadCommentAttachment).toHaveBeenCalledWith(
         "CommentOid",
         "image.png",
         "binary",
