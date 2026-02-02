@@ -142,7 +142,16 @@ function createTestApp(): Express {
   // Security headers via helmet
   app.use(
     helmet({
-      contentSecurityPolicy: false,
+      // Use restrictive CSP appropriate for JSON-RPC API with minimal HTML responses
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'none'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      // Disable COEP for SSE streaming support in MCP protocol
       crossOriginEmbedderPolicy: false,
     })
   );
