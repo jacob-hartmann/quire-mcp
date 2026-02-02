@@ -83,9 +83,16 @@ export async function startHttpServer(
   // Security headers via helmet
   app.use(
     helmet({
-      // Disable contentSecurityPolicy as MCP uses JSON-RPC
-      contentSecurityPolicy: false,
-      // Keep other security headers
+      // Use restrictive CSP appropriate for JSON-RPC API with minimal HTML responses
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'none'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      // Disable COEP for SSE streaming support in MCP protocol
       crossOriginEmbedderPolicy: false,
     })
   );
