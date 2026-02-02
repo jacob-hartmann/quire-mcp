@@ -87,6 +87,9 @@ export function registerChatTools(server: McpServer): void {
           .describe("The owner ID or OID (required when using chatId)"),
         chatId: z.string().optional().describe("The chat ID within the owner"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ oid, ownerType, ownerId, chatId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -127,6 +130,9 @@ export function registerChatTools(server: McpServer): void {
           .string()
           .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ ownerType, ownerId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -183,6 +189,9 @@ export function registerChatTools(server: McpServer): void {
           .optional()
           .describe("User IDs to remove from members"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async (
       {
@@ -262,6 +271,9 @@ export function registerChatTools(server: McpServer): void {
           .optional()
           .describe("The chat ID within the owner to delete"),
       }),
+      annotations: {
+        destructiveHint: true,
+      },
     },
     async ({ oid, ownerType, ownerId, chatId }, extra) => {
       const clientResult = await getQuireClient(extra);

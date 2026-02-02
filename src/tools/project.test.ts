@@ -417,5 +417,94 @@ describe("Project Tools", () => {
 
       expect(isErrorResponse(result)).toBe(true);
     });
+
+    it("should send progress notifications when progressToken is provided", async () => {
+      const mockTasks = [{ oid: "task1", id: 1, name: "Task 1" }];
+      const mockClient = createMockClient({
+        exportProject: vi.fn().mockResolvedValueOnce({
+          success: true,
+          data: mockTasks,
+        }),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const sendNotificationMock = vi.fn().mockResolvedValue(undefined);
+      const extra = createMockExtra({ quireToken: "token" });
+      extra._meta = { progressToken: "test-progress-token" };
+      extra.sendNotification = sendNotificationMock;
+
+      const tool = registeredTools.get("quire.exportProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+
+      const result = (await tool.handler({ id: "my-project" }, extra)) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(false);
+
+      // Verify progress notifications were sent
+      expect(sendNotificationMock).toHaveBeenCalledTimes(2);
+
+      // First call: initial progress (0%)
+      expect(sendNotificationMock).toHaveBeenNthCalledWith(1, {
+        method: "notifications/progress",
+        params: {
+          progressToken: "test-progress-token",
+          progress: 0,
+          total: 100,
+          message: "Starting project export...",
+        },
+      });
+
+      // Second call: completion progress (100%)
+      expect(sendNotificationMock).toHaveBeenNthCalledWith(2, {
+        method: "notifications/progress",
+        params: {
+          progressToken: "test-progress-token",
+          progress: 100,
+          total: 100,
+          message: "Export complete",
+        },
+      });
+    });
+
+    it("should not send progress notifications when progressToken is not provided", async () => {
+      const mockTasks = [{ oid: "task1", id: 1, name: "Task 1" }];
+      const mockClient = createMockClient({
+        exportProject: vi.fn().mockResolvedValueOnce({
+          success: true,
+          data: mockTasks,
+        }),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const sendNotificationMock = vi.fn().mockResolvedValue(undefined);
+      const extra = createMockExtra({ quireToken: "token" });
+      extra.sendNotification = sendNotificationMock;
+      // No _meta.progressToken set
+
+      const tool = registeredTools.get("quire.exportProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+
+      const result = (await tool.handler({ id: "my-project" }, extra)) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(false);
+      // sendNotification should NOT have been called
+      expect(sendNotificationMock).not.toHaveBeenCalled();
+    });
   });
 });

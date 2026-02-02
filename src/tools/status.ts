@@ -32,6 +32,9 @@ export function registerStatusTools(server: McpServer): void {
           .string()
           .describe("The project ID (e.g., 'my-project') or OID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ projectId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -60,6 +63,9 @@ export function registerStatusTools(server: McpServer): void {
           .describe("The project ID (e.g., 'my-project') or OID"),
         value: z.number().min(0).max(100).describe("The status value (0-100)"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ projectId, value }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -134,6 +140,9 @@ export function registerStatusTools(server: McpServer): void {
           .optional()
           .describe("New color (hex code without #, e.g., 'ff5733')"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async ({ projectId, value, name, color }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -175,6 +184,9 @@ export function registerStatusTools(server: McpServer): void {
             "The status value (1-99) to delete. Cannot delete 0 (To-Do) or 100 (Complete)"
           ),
       }),
+      annotations: {
+        destructiveHint: true,
+      },
     },
     async ({ projectId, value }, extra) => {
       const clientResult = await getQuireClient(extra);

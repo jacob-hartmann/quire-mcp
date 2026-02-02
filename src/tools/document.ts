@@ -33,24 +33,24 @@ export function registerDocumentTools(server: McpServer): void {
           .string()
           .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
         name: z.string().describe("The document name/title"),
-        content: z
+        description: z
           .string()
           .optional()
           .describe("The document content in markdown format"),
       }),
     },
-    async ({ ownerType, ownerId, name, content }, extra) => {
+    async ({ ownerType, ownerId, name, description }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, content });
+      const params = buildParams({ name, description });
 
       const result = await clientResult.client.createDocument(
         ownerType,
         ownerId,
-        params as { name: string; content?: string }
+        params as { name: string; description?: string }
       );
       if (!result.success) {
         return formatError(result.error, "document");
@@ -86,6 +86,9 @@ export function registerDocumentTools(server: McpServer): void {
           .optional()
           .describe("The document ID within the owner"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ oid, ownerType, ownerId, documentId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -130,6 +133,9 @@ export function registerDocumentTools(server: McpServer): void {
           .string()
           .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ ownerType, ownerId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -154,7 +160,7 @@ export function registerDocumentTools(server: McpServer): void {
     "quire.updateDocument",
     {
       description:
-        "Update a document's name or content by OID, or by owner type/ID and document ID.",
+        "Update a document's name or description by OID, or by owner type/ID and document ID.",
       inputSchema: z.object({
         oid: z
           .string()
@@ -175,19 +181,22 @@ export function registerDocumentTools(server: McpServer): void {
           .optional()
           .describe("The document ID within the owner"),
         name: z.string().optional().describe("New document name/title"),
-        content: z
+        description: z
           .string()
           .optional()
           .describe("New document content in markdown format"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
-    async ({ oid, ownerType, ownerId, documentId, name, content }, extra) => {
+    async ({ oid, ownerType, ownerId, documentId, name, description }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, content });
+      const params = buildParams({ name, description });
 
       // Update document by OID or by ownerType + ownerId + documentId
       let result;
@@ -240,6 +249,9 @@ export function registerDocumentTools(server: McpServer): void {
           .optional()
           .describe("The document ID within the owner to delete"),
       }),
+      annotations: {
+        destructiveHint: true,
+      },
     },
     async ({ oid, ownerType, ownerId, documentId }, extra) => {
       const clientResult = await getQuireClient(extra);

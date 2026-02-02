@@ -487,7 +487,7 @@ export class QuireClient {
   ): Promise<QuireResult<QuireTask[]>> {
     if (parentTaskOid) {
       // Subtask listing endpoint uses task OID directly
-      return this.request<QuireTask[]>(`/task/${parentTaskOid}/task/list`, {
+      return this.request<QuireTask[]>(`/task/list/${parentTaskOid}`, {
         schema: QuireTaskSchema.array(),
       });
     }
@@ -699,8 +699,8 @@ export class QuireClient {
       queryParams.set("tag", options.tagId.toString());
     }
     const endpoint = isOid(folderIdOrOid)
-      ? `/task/search/folder/${folderIdOrOid}`
-      : `/task/search/folder/id/${folderIdOrOid}`;
+      ? `/task/search-folder/${folderIdOrOid}`
+      : `/task/search-folder/id/${folderIdOrOid}`;
     return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`, {
       schema: QuireTaskSchema.array(),
     });
@@ -735,8 +735,8 @@ export class QuireClient {
       queryParams.set("tag", options.tagId.toString());
     }
     const endpoint = isOid(orgIdOrOid)
-      ? `/task/search/organization/${orgIdOrOid}`
-      : `/task/search/organization/id/${orgIdOrOid}`;
+      ? `/task/search-organization/${orgIdOrOid}`
+      : `/task/search-organization/id/${orgIdOrOid}`;
     return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`, {
       schema: QuireTaskSchema.array(),
     });
@@ -1203,7 +1203,7 @@ export class QuireClient {
     }
     const endpoint = isOid(ownerIdOrOid)
       ? `/doc/${ownerType}/${ownerIdOrOid}`
-      : `/doc/${ownerType}/id/${ownerIdOrOid}`;
+      : `/doc/id/${ownerType}/${ownerIdOrOid}`;
     return this.request<QuireDocument>(endpoint, {
       method: "POST",
       body,
@@ -1249,7 +1249,7 @@ export class QuireClient {
   ): Promise<QuireResult<QuireDocument[]>> {
     const endpoint = isOid(ownerIdOrOid)
       ? `/doc/list/${ownerType}/${ownerIdOrOid}`
-      : `/doc/list/${ownerType}/id/${ownerIdOrOid}`;
+      : `/doc/list/id/${ownerType}/${ownerIdOrOid}`;
     return this.request<QuireDocument[]>(endpoint, {
       schema: QuireDocumentSchema.array(),
     });
@@ -1348,7 +1348,7 @@ export class QuireClient {
     }
     const endpoint = isOid(ownerIdOrOid)
       ? `/sublist/${ownerType}/${ownerIdOrOid}`
-      : `/sublist/${ownerType}/id/${ownerIdOrOid}`;
+      : `/sublist/id/${ownerType}/${ownerIdOrOid}`;
     return this.request<QuireSublist>(endpoint, {
       method: "POST",
       body,
@@ -1394,7 +1394,7 @@ export class QuireClient {
   ): Promise<QuireResult<QuireSublist[]>> {
     const endpoint = isOid(ownerIdOrOid)
       ? `/sublist/list/${ownerType}/${ownerIdOrOid}`
-      : `/sublist/list/${ownerType}/id/${ownerIdOrOid}`;
+      : `/sublist/list/id/${ownerType}/${ownerIdOrOid}`;
     return this.request<QuireSublist[]>(endpoint, {
       schema: QuireSublistSchema.array(),
     });
@@ -1493,7 +1493,7 @@ export class QuireClient {
     }
     const endpoint = isOid(ownerIdOrOid)
       ? `/chat/${ownerType}/${ownerIdOrOid}`
-      : `/chat/${ownerType}/id/${ownerIdOrOid}`;
+      : `/chat/id/${ownerType}/${ownerIdOrOid}`;
     return this.request<QuireChat>(endpoint, {
       method: "POST",
       body,
@@ -1539,7 +1539,7 @@ export class QuireClient {
   ): Promise<QuireResult<QuireChat[]>> {
     const endpoint = isOid(ownerIdOrOid)
       ? `/chat/list/${ownerType}/${ownerIdOrOid}`
-      : `/chat/list/${ownerType}/id/${ownerIdOrOid}`;
+      : `/chat/list/id/${ownerType}/${ownerIdOrOid}`;
     return this.request<QuireChat[]>(endpoint, {
       schema: QuireChatSchema.array(),
     });

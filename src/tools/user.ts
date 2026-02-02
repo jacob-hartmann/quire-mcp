@@ -27,6 +27,9 @@ export function registerUserTools(server: McpServer): void {
             "The user ID (e.g., 'john-doe'), OID (unique identifier), or email address"
           ),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ id }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -50,8 +53,12 @@ export function registerUserTools(server: McpServer): void {
       description:
         "List all users accessible to the current user. " +
         "Returns an array of user objects with basic profile information.",
+      inputSchema: z.object({}),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
-    async (extra) => {
+    async (_args, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
@@ -78,6 +85,9 @@ export function registerUserTools(server: McpServer): void {
           .string()
           .describe("The project ID (e.g., 'my-project') or OID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ projectId }, extra) => {
       const clientResult = await getQuireClient(extra);

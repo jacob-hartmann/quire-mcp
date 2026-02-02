@@ -71,6 +71,9 @@ export function registerStorageTools(server: McpServer): void {
       inputSchema: z.object({
         name: z.string().describe("The storage key name"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ name }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -114,6 +117,9 @@ export function registerStorageTools(server: McpServer): void {
           .string()
           .describe("The prefix to filter storage keys (e.g., 'config/')"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ prefix }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -158,6 +164,9 @@ export function registerStorageTools(server: McpServer): void {
           .unknown()
           .describe("The value to store (can be any JSON-serializable value)"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async ({ name, value }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -198,6 +207,9 @@ export function registerStorageTools(server: McpServer): void {
       inputSchema: z.object({
         name: z.string().describe("The storage key name to delete"),
       }),
+      annotations: {
+        destructiveHint: true,
+      },
     },
     async ({ name }, extra) => {
       const clientResult = await getQuireClient(extra);

@@ -16,9 +16,12 @@ import { z } from "zod";
  */
 export const QuireSimpleUserSchema = z.object({
   id: z.string(),
+  oid: z.string().optional(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
   image: z.string().optional(),
+  url: z.string().optional(),
+  iconColor: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -29,11 +32,16 @@ export const QuireUserSchema = z.object({
   id: z.string(),
   oid: z.string(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
+  nameHtml: z.string().optional(),
   email: z.string().optional(),
   image: z.string().optional(),
   description: z.string().optional(),
+  descriptionText: z.string().optional(),
+  descriptionHtml: z.string().optional(),
   website: z.string().optional(),
+  url: z.string().optional(),
+  iconColor: z.string().optional(),
   timezone: z.string().optional(),
   locale: z.string().optional(),
 });
@@ -46,16 +54,26 @@ export const QuireOrganizationSchema = z.object({
   oid: z.string(),
   id: z.string(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
+  nameHtml: z.string().optional(),
   description: z.string().optional(),
   descriptionText: z.string().optional(),
+  descriptionHtml: z.string().optional(),
   image: z.string().optional(),
   icon: z.string().optional(),
   iconColor: z.string().optional(),
   url: z.string().optional(),
   website: z.string().optional(),
+  email: z.string().optional(),
   memberCount: z.number().optional(),
   projectCount: z.number().optional(),
+  subscription: z
+    .object({
+      plan: z.string(),
+      due: z.string().optional(),
+      expired: z.boolean().optional(),
+    })
+    .optional(),
   createdAt: z.string().optional(),
   createdBy: QuireSimpleUserSchema.optional(),
   followers: z.array(QuireSimpleUserSchema).optional(),
@@ -69,9 +87,11 @@ export const QuireProjectSchema = z.object({
   oid: z.string(),
   id: z.string(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
+  nameHtml: z.string().optional(),
   description: z.string().optional(),
   descriptionText: z.string().optional(),
+  descriptionHtml: z.string().optional(),
   image: z.string().optional(),
   icon: z.string().optional(),
   iconColor: z.string().optional(),
@@ -83,7 +103,7 @@ export const QuireProjectSchema = z.object({
       oid: z.string(),
       id: z.string(),
       name: z.string(),
-      nameText: z.string(),
+      nameText: z.string().optional(),
     })
     .optional(),
   owner: QuireSimpleUserSchema.optional(),
@@ -91,6 +111,7 @@ export const QuireProjectSchema = z.object({
   createdBy: QuireSimpleUserSchema.optional(),
   followers: z.array(QuireSimpleUserSchema).optional(),
   archived: z.boolean().optional(),
+  archivedAt: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -101,15 +122,29 @@ export const QuireTaskSchema = z.object({
   oid: z.string(),
   id: z.number(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
   description: z.string().optional(),
   descriptionText: z.string().optional(),
   url: z.string().optional(),
-  status: z.number().optional(),
-  priority: z.number().optional(),
+  status: z
+    .object({
+      value: z.number(),
+      name: z.string(),
+      nameText: z.string().optional(),
+      color: z.string().optional(),
+    })
+    .optional(),
+  priority: z
+    .object({
+      value: z.number(),
+      name: z.string(),
+      nameText: z.string().optional(),
+      color: z.string().optional(),
+    })
+    .optional(),
   start: z.string().optional(),
   due: z.string().optional(),
-  peekaboo: z.string().optional(),
+  peekaboo: z.boolean().optional(),
   recurring: z
     .object({
       type: z.string(),
@@ -125,7 +160,7 @@ export const QuireTaskSchema = z.object({
       oid: z.string(),
       id: z.string(),
       name: z.string(),
-      nameText: z.string(),
+      nameText: z.string().optional(),
     })
     .optional(),
   parent: z
@@ -144,7 +179,7 @@ export const QuireTaskSchema = z.object({
       z.object({
         id: z.number(),
         name: z.string(),
-        nameText: z.string(),
+        nameText: z.string().optional(),
         color: z.string().optional(),
       })
     )
@@ -161,9 +196,9 @@ export const QuireTaskSchema = z.object({
 
 export const QuireTagSchema = z.object({
   oid: z.string(),
-  id: z.number(),
+  id: z.number().optional(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
   color: z.string().optional(),
 });
 
@@ -175,9 +210,15 @@ export const QuireCommentSchema = z.object({
   oid: z.string(),
   description: z.string(),
   descriptionText: z.string(),
+  descriptionHtml: z.string().optional(),
+  attachments: z.array(z.unknown()).optional(),
   createdAt: z.string(),
   createdBy: QuireSimpleUserSchema,
-  updatedAt: z.string().optional(),
+  editedAt: z.string().optional(),
+  editedBy: QuireSimpleUserSchema.optional(),
+  pinAt: z.string().optional(),
+  pinBy: QuireSimpleUserSchema.optional(),
+  url: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -187,7 +228,18 @@ export const QuireCommentSchema = z.object({
 export const QuireStatusSchema = z.object({
   value: z.number(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
+  color: z.string().optional(),
+});
+
+// ---------------------------------------------------------------------------
+// Priority Schemas
+// ---------------------------------------------------------------------------
+
+export const QuirePrioritySchema = z.object({
+  value: z.number(),
+  name: z.string(),
+  nameText: z.string().optional(),
   color: z.string().optional(),
 });
 
@@ -197,12 +249,8 @@ export const QuireStatusSchema = z.object({
 
 export const QuirePartnerSchema = z.object({
   oid: z.string(),
-  id: z.string(),
   name: z.string(),
-  nameText: z.string(),
-  description: z.string().optional(),
-  url: z.string().optional(),
-  image: z.string().optional(),
+  color: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -213,9 +261,9 @@ export const QuireDocumentSchema = z.object({
   oid: z.string(),
   id: z.string(),
   name: z.string(),
-  nameText: z.string(),
-  content: z.string().optional(),
-  contentText: z.string().optional(),
+  nameText: z.string().optional(),
+  description: z.string().optional(),
+  descriptionText: z.string().optional(),
   url: z.string().optional(),
   createdAt: z.string().optional(),
   createdBy: QuireSimpleUserSchema.optional(),
@@ -229,11 +277,20 @@ export const QuireSublistSchema = z.object({
   oid: z.string(),
   id: z.string(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
+  nameHtml: z.string().optional(),
   description: z.string().optional(),
+  descriptionText: z.string().optional(),
+  descriptionHtml: z.string().optional(),
+  iconColor: z.string().optional(),
+  image: z.string().optional(),
+  url: z.string().optional(),
   taskCount: z.number().optional(),
   createdAt: z.string().optional(),
   createdBy: QuireSimpleUserSchema.optional(),
+  archivedAt: z.string().optional(),
+  start: z.string().optional(),
+  due: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -244,11 +301,20 @@ export const QuireChatSchema = z.object({
   oid: z.string(),
   id: z.string(),
   name: z.string(),
-  nameText: z.string(),
+  nameText: z.string().optional(),
+  nameHtml: z.string().optional(),
   description: z.string().optional(),
+  descriptionText: z.string().optional(),
+  descriptionHtml: z.string().optional(),
+  iconColor: z.string().optional(),
+  image: z.string().optional(),
+  url: z.string().optional(),
   messageCount: z.number().optional(),
   createdAt: z.string().optional(),
   members: z.array(QuireSimpleUserSchema).optional(),
+  archivedAt: z.string().optional(),
+  start: z.string().optional(),
+  due: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -264,14 +330,20 @@ export const QuireStorageEntrySchema = z.object({
 // Attachment Schemas
 // ---------------------------------------------------------------------------
 
+/**
+ * Attachment schema for upload responses (SimpleAttachment).
+ * Upload endpoints return only name, length, url.
+ * Full attachment objects in task/comment responses may have additional fields.
+ */
 export const QuireAttachmentSchema = z.object({
-  oid: z.string(),
   name: z.string(),
+  length: z.number(),
   url: z.string(),
-  size: z.number(),
-  mimeType: z.string(),
-  createdAt: z.string(),
-  createdBy: QuireSimpleUserSchema,
+  // Additional fields that may appear in full attachment objects
+  oid: z.string().optional(),
+  type: z.number().optional(),
+  createdAt: z.string().optional(),
+  createdBy: QuireSimpleUserSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -307,6 +379,7 @@ export type QuireTaskSchemaType = z.infer<typeof QuireTaskSchema>;
 export type QuireTagSchemaType = z.infer<typeof QuireTagSchema>;
 export type QuireCommentSchemaType = z.infer<typeof QuireCommentSchema>;
 export type QuireStatusSchemaType = z.infer<typeof QuireStatusSchema>;
+export type QuirePrioritySchemaType = z.infer<typeof QuirePrioritySchema>;
 export type QuirePartnerSchemaType = z.infer<typeof QuirePartnerSchema>;
 export type QuireDocumentSchemaType = z.infer<typeof QuireDocumentSchema>;
 export type QuireSublistSchemaType = z.infer<typeof QuireSublistSchema>;

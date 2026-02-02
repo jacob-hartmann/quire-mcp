@@ -12,11 +12,16 @@ export interface QuireUser {
   id: string;
   oid: string;
   name: string;
-  nameText: string;
+  nameText?: string;
+  nameHtml?: string;
   email?: string;
   image?: string;
   description?: string;
+  descriptionText?: string;
+  descriptionHtml?: string;
   website?: string;
+  url?: string;
+  iconColor?: string;
   timezone?: string;
   locale?: string;
 }
@@ -26,9 +31,12 @@ export interface QuireUser {
  */
 export interface QuireSimpleUser {
   id: string;
+  oid?: string;
   name: string;
-  nameText: string;
+  nameText?: string;
   image?: string;
+  url?: string;
+  iconColor?: string;
 }
 
 /**
@@ -39,16 +47,24 @@ export interface QuireOrganization {
   oid: string;
   id: string;
   name: string;
-  nameText: string;
+  nameText?: string;
+  nameHtml?: string;
   description?: string;
   descriptionText?: string;
+  descriptionHtml?: string;
   image?: string;
   icon?: string;
   iconColor?: string;
   url?: string;
   website?: string;
+  email?: string;
   memberCount?: number;
   projectCount?: number;
+  subscription?: {
+    plan: string;
+    due?: string;
+    expired?: boolean;
+  };
   createdAt?: string;
   createdBy?: QuireSimpleUser;
   followers?: QuireSimpleUser[];
@@ -62,9 +78,11 @@ export interface QuireProject {
   oid: string;
   id: string;
   name: string;
-  nameText: string;
+  nameText?: string;
+  nameHtml?: string;
   description?: string;
   descriptionText?: string;
+  descriptionHtml?: string;
   image?: string;
   icon?: string;
   iconColor?: string;
@@ -75,13 +93,14 @@ export interface QuireProject {
     oid: string;
     id: string;
     name: string;
-    nameText: string;
+    nameText?: string;
   };
   owner?: QuireSimpleUser;
   createdAt?: string;
   createdBy?: QuireSimpleUser;
   followers?: QuireSimpleUser[];
   archived?: boolean;
+  archivedAt?: string;
 }
 
 /**
@@ -92,15 +111,25 @@ export interface QuireTask {
   oid: string;
   id: number;
   name: string;
-  nameText: string;
+  nameText?: string;
   description?: string;
   descriptionText?: string;
   url?: string;
-  status?: number;
-  priority?: number;
+  status?: {
+    value: number;
+    name: string;
+    nameText?: string;
+    color?: string;
+  };
+  priority?: {
+    value: number;
+    name: string;
+    nameText?: string;
+    color?: string;
+  };
   start?: string;
   due?: string;
-  peekaboo?: string;
+  peekaboo?: boolean;
   recurring?: {
     type: string;
     interval?: number;
@@ -113,7 +142,7 @@ export interface QuireTask {
     oid: string;
     id: string;
     name: string;
-    nameText: string;
+    nameText?: string;
   };
   parent?: {
     oid: string;
@@ -127,7 +156,7 @@ export interface QuireTask {
   tags?: {
     id: number;
     name: string;
-    nameText: string;
+    nameText?: string;
     color?: string;
   }[];
   followers?: QuireSimpleUser[];
@@ -185,8 +214,6 @@ export interface UpdateOrganizationParams {
 export interface UpdateProjectParams {
   name?: string;
   description?: string;
-  icon?: string;
-  iconColor?: string;
   archived?: boolean;
   followers?: string[];
   addFollowers?: string[];
@@ -239,9 +266,9 @@ export type QuireErrorCode =
  */
 export interface QuireTag {
   oid: string;
-  id: number;
+  id?: number;
   name: string;
-  nameText: string;
+  nameText?: string;
   color?: string;
 }
 
@@ -273,9 +300,15 @@ export interface QuireComment {
   oid: string;
   description: string;
   descriptionText: string;
+  descriptionHtml?: string;
+  attachments?: unknown[];
   createdAt: string;
   createdBy: QuireSimpleUser;
-  updatedAt?: string;
+  editedAt?: string;
+  editedBy?: QuireSimpleUser;
+  pinAt?: string;
+  pinBy?: QuireSimpleUser;
+  url?: string;
 }
 
 /**
@@ -283,13 +316,16 @@ export interface QuireComment {
  */
 export interface CreateCommentParams {
   description: string;
+  asUser?: boolean;
+  pinned?: boolean;
 }
 
 /**
  * Comment update parameters
  */
 export interface UpdateCommentParams {
-  description: string;
+  description?: string;
+  pinned?: boolean;
 }
 
 // =====================
@@ -303,7 +339,7 @@ export interface UpdateCommentParams {
 export interface QuireStatus {
   value: number;
   name: string;
-  nameText: string;
+  nameText?: string;
   color?: string;
 }
 
@@ -333,12 +369,8 @@ export interface UpdateStatusParams {
  */
 export interface QuirePartner {
   oid: string;
-  id: string;
   name: string;
-  nameText: string;
-  description?: string;
-  url?: string;
-  image?: string;
+  color?: string;
 }
 
 // =====================
@@ -353,9 +385,9 @@ export interface QuireDocument {
   oid: string;
   id: string;
   name: string;
-  nameText: string;
-  content?: string;
-  contentText?: string;
+  nameText?: string;
+  description?: string;
+  descriptionText?: string;
   url?: string;
   createdAt?: string;
   createdBy?: QuireSimpleUser;
@@ -366,7 +398,7 @@ export interface QuireDocument {
  */
 export interface CreateDocumentParams {
   name: string;
-  content?: string;
+  description?: string;
 }
 
 /**
@@ -374,7 +406,7 @@ export interface CreateDocumentParams {
  */
 export interface UpdateDocumentParams {
   name?: string;
-  content?: string;
+  description?: string;
 }
 
 // =====================
@@ -389,11 +421,20 @@ export interface QuireSublist {
   oid: string;
   id: string;
   name: string;
-  nameText: string;
+  nameText?: string;
+  nameHtml?: string;
   description?: string;
+  descriptionText?: string;
+  descriptionHtml?: string;
+  iconColor?: string;
+  image?: string;
+  url?: string;
   taskCount?: number;
   createdAt?: string;
   createdBy?: QuireSimpleUser;
+  archivedAt?: string;
+  start?: string;
+  due?: string;
 }
 
 /**
@@ -424,11 +465,20 @@ export interface QuireChat {
   oid: string;
   id: string;
   name: string;
-  nameText: string;
+  nameText?: string;
+  nameHtml?: string;
   description?: string;
+  descriptionText?: string;
+  descriptionHtml?: string;
+  iconColor?: string;
+  image?: string;
+  url?: string;
   messageCount?: number;
   createdAt?: string;
   members?: QuireSimpleUser[];
+  archivedAt?: string;
+  start?: string;
+  due?: string;
 }
 
 /**
@@ -491,14 +541,17 @@ export interface SendNotificationParams {
 
 /**
  * Attachment returned by the Quire API
+ * Upload endpoints return SimpleAttachment with only name, length, url.
+ * Full attachment objects may have additional fields.
  * @see https://quire.io/dev/api/#attachment
  */
 export interface QuireAttachment {
-  oid: string;
   name: string;
+  length: number;
   url: string;
-  size: number;
-  mimeType: string;
-  createdAt: string;
-  createdBy: QuireSimpleUser;
+  // Additional fields that may appear in full attachment objects
+  oid?: string;
+  type?: number;
+  createdAt?: string;
+  createdBy?: QuireSimpleUser;
 }

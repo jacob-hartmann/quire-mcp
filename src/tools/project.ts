@@ -35,6 +35,9 @@ export function registerProjectTools(server: McpServer): void {
               "If not provided, returns all accessible projects."
           ),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ organizationId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -65,6 +68,9 @@ export function registerProjectTools(server: McpServer): void {
             "The project ID (e.g., 'my-project') or OID (unique identifier)"
           ),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ id }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -86,7 +92,7 @@ export function registerProjectTools(server: McpServer): void {
     "quire.updateProject",
     {
       description:
-        "Update a project's settings including name, description, icon, and followers.",
+        "Update a project's settings including name, description, and followers.",
       inputSchema: z.object({
         id: z
           .string()
@@ -98,11 +104,6 @@ export function registerProjectTools(server: McpServer): void {
           .string()
           .optional()
           .describe("New description for the project"),
-        icon: z.string().optional().describe("Icon identifier for the project"),
-        iconColor: z
-          .string()
-          .optional()
-          .describe("Icon color (hex code without #)"),
         archived: z
           .boolean()
           .optional()
@@ -120,14 +121,15 @@ export function registerProjectTools(server: McpServer): void {
           .optional()
           .describe("User IDs to remove from followers"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async (
       {
         id,
         name,
         description,
-        icon,
-        iconColor,
         archived,
         followers,
         addFollowers,
@@ -143,8 +145,6 @@ export function registerProjectTools(server: McpServer): void {
       const params = buildParams({
         name,
         description,
-        icon,
-        iconColor,
         archived,
         followers,
         addFollowers,
@@ -166,7 +166,8 @@ export function registerProjectTools(server: McpServer): void {
     {
       description:
         "Export all tasks from a project in JSON or CSV format. " +
-        "Useful for backups, analysis, or integrations.",
+        "Useful for backups, analysis, or integrations. " +
+        "Supports progress notifications for large exports when client provides a progressToken.",
       inputSchema: z.object({
         id: z
           .string()
@@ -178,6 +179,9 @@ export function registerProjectTools(server: McpServer): void {
           .default("json")
           .describe("Export format: 'json' (default) or 'csv'"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ id, format }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -185,7 +189,36 @@ export function registerProjectTools(server: McpServer): void {
         return formatAuthError(clientResult.error);
       }
 
+      // Check if client requested progress tracking
+      const progressToken = extra._meta?.progressToken;
+
+      // Helper function to send progress notifications
+      const sendProgress = async (
+        progress: number,
+        total: number,
+        message?: string
+      ): Promise<void> => {
+        if (progressToken) {
+          await extra.sendNotification({
+            method: "notifications/progress",
+            params: {
+              progressToken,
+              progress,
+              total,
+              ...(message && { message }),
+            },
+          });
+        }
+      };
+
+      // Send initial progress
+      await sendProgress(0, 100, "Starting project export...");
+
       const result = await clientResult.client.exportProject(id, format);
+
+      // Send completion progress
+      await sendProgress(100, 100, "Export complete");
+
       if (!result.success) {
         return formatError(result.error, "project");
       }

@@ -71,6 +71,9 @@ export function registerPartnerTools(server: McpServer): void {
       inputSchema: z.object({
         oid: z.string().describe("The partner OID (unique identifier)"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ oid }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -112,6 +115,9 @@ export function registerPartnerTools(server: McpServer): void {
           .string()
           .describe("The project ID (e.g., 'my-project') or OID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ projectId }, extra) => {
       const clientResult = await getQuireClient(extra);

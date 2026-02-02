@@ -548,39 +548,23 @@ export function createMockClient(
         data: { success: true },
       }),
 
-    // Attachment methods
+    // Attachment methods - upload returns SimpleAttachment with name, length, url
     uploadTaskAttachment: () =>
       Promise.resolve({
         success: true,
         data: {
-          oid: "attachment-oid",
           name: "test-file.txt",
+          length: 1024,
           url: "https://quire.io/attachments/test-file.txt",
-          size: 1024,
-          mimeType: "text/plain",
-          createdAt: "2024-01-01T00:00:00Z",
-          createdBy: {
-            id: "test-user",
-            name: "Test User",
-            nameText: "Test User",
-          },
         },
       }),
     uploadCommentAttachment: () =>
       Promise.resolve({
         success: true,
         data: {
-          oid: "attachment-oid",
           name: "test-file.txt",
+          length: 1024,
           url: "https://quire.io/attachments/test-file.txt",
-          size: 1024,
-          mimeType: "text/plain",
-          createdAt: "2024-01-01T00:00:00Z",
-          createdBy: {
-            id: "test-user",
-            name: "Test User",
-            nameText: "Test User",
-          },
         },
       }),
   };

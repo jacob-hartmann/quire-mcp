@@ -443,6 +443,31 @@ export async function startHttpServer(
   app.get("/mcp", authMiddleware, mcpGetHandler);
   app.delete("/mcp", authMiddleware, mcpDeleteHandler);
 
+  // Global error handler - must be registered after all routes
+  // Express identifies error handlers by their 4-parameter signature
+  app.use(
+    (
+      err: Error,
+      _req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction
+    ) => {
+      console.error("[quire-mcp] Unhandled error:", err);
+
+      // Always return JSON, never HTML
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: "2.0",
+          error: {
+            code: JSONRPC_ERROR_INTERNAL,
+            message: "Internal server error",
+          },
+          id: null,
+        });
+      }
+    }
+  );
+
   // Start automatic token cleanup interval
   const tokenStore = getServerTokenStore();
   const cleanupInterval = setInterval(() => {

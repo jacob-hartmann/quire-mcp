@@ -39,6 +39,9 @@ export function registerTaskTools(server: McpServer): void {
               "If not provided, returns root-level tasks."
           ),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ projectId, parentTaskOid }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -83,6 +86,9 @@ export function registerTaskTools(server: McpServer): void {
             "The task OID (unique identifier). Use this OR projectId+taskId"
           ),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ projectId, taskId, oid }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -272,6 +278,9 @@ export function registerTaskTools(server: McpServer): void {
           .optional()
           .describe("Tag IDs to remove"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async (
       {
@@ -346,6 +355,9 @@ export function registerTaskTools(server: McpServer): void {
       inputSchema: z.object({
         oid: z.string().describe("The task OID (unique identifier) to delete"),
       }),
+      annotations: {
+        destructiveHint: true,
+      },
     },
     async ({ oid }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -398,6 +410,10 @@ export function registerTaskTools(server: McpServer): void {
           .describe("Filter by assignee user ID"),
         tagId: z.number().optional().describe("Filter by tag ID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (
       { projectId, keyword, status, priority, assigneeId, tagId },
@@ -618,6 +634,10 @@ export function registerTaskTools(server: McpServer): void {
           .describe("Filter by assignee user ID"),
         tagId: z.number().optional().describe("Filter by tag ID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (
       { folderId, keyword, status, priority, assigneeId, tagId },
@@ -679,6 +699,10 @@ export function registerTaskTools(server: McpServer): void {
           .describe("Filter by assignee user ID"),
         tagId: z.number().optional().describe("Filter by tag ID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (
       { organizationId, keyword, status, priority, assigneeId, tagId },

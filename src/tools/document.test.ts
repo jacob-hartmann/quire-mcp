@@ -112,7 +112,7 @@ describe("Document Tools", () => {
           ownerType: "project",
           ownerId: "my-project",
           name: "README",
-          content: "# Readme",
+          description: "# Readme",
         },
         createMockExtra({ quireToken: "token" })
       )) as {
@@ -124,7 +124,7 @@ describe("Document Tools", () => {
       expect(mockClient.createDocument).toHaveBeenCalledWith(
         "project",
         "my-project",
-        { name: "README", content: "# Readme" }
+        { name: "README", description: "# Readme" }
       );
     });
 
@@ -321,13 +321,13 @@ describe("Document Tools", () => {
       expect(tool).toBeDefined();
       if (!tool) return;
       await tool.handler(
-        { oid: "DocOid", name: "Updated", content: "New content" },
+        { oid: "DocOid", name: "Updated", description: "New content" },
         createMockExtra({ quireToken: "token" })
       );
 
       expect(mockClient.updateDocument).toHaveBeenCalledWith("DocOid", {
         name: "Updated",
-        content: "New content",
+        description: "New content",
       });
     });
 

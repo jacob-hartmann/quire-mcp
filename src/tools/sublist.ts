@@ -82,6 +82,9 @@ export function registerSublistTools(server: McpServer): void {
           .optional()
           .describe("The sublist ID within the owner"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ oid, ownerType, ownerId, sublistId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -126,6 +129,9 @@ export function registerSublistTools(server: McpServer): void {
           .string()
           .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ ownerType, ownerId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -170,6 +176,9 @@ export function registerSublistTools(server: McpServer): void {
         name: z.string().optional().describe("New sublist name"),
         description: z.string().optional().describe("New sublist description"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async (
       { oid, ownerType, ownerId, sublistId, name, description },
@@ -233,6 +242,9 @@ export function registerSublistTools(server: McpServer): void {
           .optional()
           .describe("The sublist ID within the owner to delete"),
       }),
+      annotations: {
+        destructiveHint: true,
+      },
     },
     async ({ oid, ownerType, ownerId, sublistId }, extra) => {
       const clientResult = await getQuireClient(extra);

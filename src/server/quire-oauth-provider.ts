@@ -40,6 +40,7 @@ import {
   QUIRE_OAUTH_TOKEN_URL,
   FETCH_TIMEOUT_MS,
 } from "../constants.js";
+import { saveTokens } from "../quire/token-store.js";
 
 // ---------------------------------------------------------------------------
 // Clients Store
@@ -113,10 +114,7 @@ export class QuireProxyOAuthProvider implements OAuthServerProvider {
     // We generate our own "Quire state" for the upstream redirect, but we must
     // preserve the client's original OAuth state so we can echo it back to the
     // MCP client on the final redirect.
-    const pendingRequest: Omit<
-      PendingAuthRequest,
-      "createdAt"
-    > = {
+    const pendingRequest: Omit<PendingAuthRequest, "createdAt"> = {
       clientId: client.client_id,
       codeChallenge: params.codeChallenge,
       codeChallengeMethod: "S256", // We only support S256
@@ -278,6 +276,22 @@ export class QuireProxyOAuthProvider implements OAuthServerProvider {
       scope: refreshEntry.scope,
     });
 
+    // Persist refreshed Quire tokens to disk for stdio mode fallback
+    try {
+      saveTokens({
+        accessToken: quireTokens.access_token,
+        refreshToken: quireTokens.refresh_token,
+        expiresAt: quireTokens.expires_in
+          ? new Date(Date.now() + quireTokens.expires_in * 1000).toISOString()
+          : undefined,
+      });
+    } catch (err) {
+      console.error(
+        "[quire-mcp] Failed to persist refreshed tokens to disk:",
+        err
+      );
+    }
+
     let newRefreshToken: string | undefined;
     if (quireTokens.refresh_token) {
       newRefreshToken = this.tokenStore.storeRefreshToken({
@@ -427,6 +441,20 @@ export async function handleQuireOAuthCallback(
     quireRefreshToken: quireTokens.refresh_token,
     scope: pending.scope,
   });
+
+  // Persist Quire tokens to disk for stdio mode fallback (e.g., completions)
+  try {
+    saveTokens({
+      accessToken: quireTokens.access_token,
+      refreshToken: quireTokens.refresh_token,
+      expiresAt: quireTokens.expires_in
+        ? new Date(Date.now() + quireTokens.expires_in * 1000).toISOString()
+        : undefined,
+    });
+  } catch (err) {
+    // Non-fatal: completions may not work but HTTP mode continues
+    console.error("[quire-mcp] Failed to persist tokens to disk:", err);
+  }
 
   // Build redirect URL back to MCP client
   const redirectUrl = new URL(pending.redirectUri);

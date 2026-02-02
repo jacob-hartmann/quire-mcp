@@ -44,6 +44,9 @@ export function registerCommentTools(server: McpServer): void {
           .optional()
           .describe("The task ID number within the project"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ taskOid, projectId, taskId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -139,6 +142,9 @@ export function registerCommentTools(server: McpServer): void {
           .string()
           .describe("The new comment text in markdown format"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async ({ oid, description }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -167,6 +173,9 @@ export function registerCommentTools(server: McpServer): void {
           .string()
           .describe("The comment OID (unique identifier) to delete"),
       }),
+      annotations: {
+        destructiveHint: true,
+      },
     },
     async ({ oid }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -205,6 +214,9 @@ export function registerCommentTools(server: McpServer): void {
           .optional()
           .describe("The chat ID within the project"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ chatOid, projectId, chatId }, extra) => {
       const clientResult = await getQuireClient(extra);

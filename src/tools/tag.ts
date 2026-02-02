@@ -31,6 +31,9 @@ export function registerTagTools(server: McpServer): void {
           .string()
           .describe("The project ID (e.g., 'my-project') or OID"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ projectId }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -55,6 +58,9 @@ export function registerTagTools(server: McpServer): void {
       inputSchema: z.object({
         oid: z.string().describe("The tag OID (unique identifier)"),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ oid }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -121,6 +127,9 @@ export function registerTagTools(server: McpServer): void {
           .optional()
           .describe("New color (hex code without #, e.g., 'ff5733')"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async ({ oid, name, color }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -148,6 +157,9 @@ export function registerTagTools(server: McpServer): void {
       inputSchema: z.object({
         oid: z.string().describe("The tag OID (unique identifier) to delete"),
       }),
+      annotations: {
+        destructiveHint: true,
+      },
     },
     async ({ oid }, extra) => {
       const clientResult = await getQuireClient(extra);

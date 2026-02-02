@@ -7,6 +7,7 @@
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { getQuireClient } from "../quire/client-factory.js";
 import { formatError, formatAuthError, formatSuccess } from "./utils.js";
 
@@ -21,8 +22,12 @@ export function registerWhoamiTool(server: McpServer): void {
         "Get the current authenticated user's profile from Quire. " +
         "Use this to verify your authentication is working and to see " +
         "basic information about the connected Quire account.",
+      inputSchema: z.object({}),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
-    async (extra) => {
+    async (_args, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);

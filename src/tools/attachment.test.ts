@@ -91,9 +91,10 @@ describe("Attachment Tools", () => {
 
     it("should upload attachment with default mime type", async () => {
       const mockAttachment = {
-        oid: "attachment-oid",
         name: "file.txt",
+        length: 5,
         url: "https://quire.io/attachments/file.txt",
+        oid: "attachment-oid",
       };
       const mockClient = createMockClient({
         uploadTaskAttachment: vi.fn().mockResolvedValueOnce({
@@ -134,7 +135,7 @@ describe("Attachment Tools", () => {
       const mockClient = createMockClient({
         uploadTaskAttachment: vi.fn().mockResolvedValueOnce({
           success: true,
-          data: { oid: "attachment-oid", name: "data.json" },
+          data: { name: "data.json", length: 10, url: "https://quire.io/attachments/data.json", oid: "attachment-oid" },
         }),
       });
 
@@ -252,9 +253,10 @@ describe("Attachment Tools", () => {
 
     it("should upload attachment with default mime type", async () => {
       const mockAttachment = {
-        oid: "attachment-oid",
         name: "image.png",
+        length: 20,
         url: "https://quire.io/attachments/image.png",
+        oid: "attachment-oid",
       };
       const mockClient = createMockClient({
         uploadCommentAttachment: vi.fn().mockResolvedValueOnce({
@@ -295,7 +297,7 @@ describe("Attachment Tools", () => {
       const mockClient = createMockClient({
         uploadCommentAttachment: vi.fn().mockResolvedValueOnce({
           success: true,
-          data: { oid: "attachment-oid", name: "image.png" },
+          data: { name: "image.png", length: 20, url: "https://quire.io/attachments/image.png", oid: "attachment-oid" },
         }),
       });
 

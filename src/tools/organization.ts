@@ -25,8 +25,12 @@ export function registerOrganizationTools(server: McpServer): void {
       description:
         "List all organizations accessible to the current user. " +
         "Returns an array of organization objects with basic information.",
+      inputSchema: z.object({}),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
-    async (extra) => {
+    async (_args, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
@@ -55,6 +59,9 @@ export function registerOrganizationTools(server: McpServer): void {
             "The organization ID (e.g., 'my-organization') or OID (unique identifier)"
           ),
       }),
+      annotations: {
+        readOnlyHint: true,
+      },
     },
     async ({ id }, extra) => {
       const clientResult = await getQuireClient(extra);
@@ -99,6 +106,9 @@ export function registerOrganizationTools(server: McpServer): void {
           .optional()
           .describe("User IDs to remove from followers (optional)"),
       }),
+      annotations: {
+        idempotentHint: true,
+      },
     },
     async ({ id, followers, addFollowers, removeFollowers }, extra) => {
       const clientResult = await getQuireClient(extra);
