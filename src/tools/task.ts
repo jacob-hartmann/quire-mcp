@@ -7,57 +7,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getQuireClient } from "../quire/client-factory.js";
-
-interface ToolTextContent {
-  type: "text";
-  text: string;
-}
-
-interface ToolErrorResponse {
-  [x: string]: unknown;
-  isError: true;
-  content: ToolTextContent[];
-}
-
-/**
- * Format error response for MCP tools
- */
-function formatError(error: {
-  code: string;
-  message: string;
-}): ToolErrorResponse {
-  let errorMessage = error.message;
-
-  switch (error.code) {
-    case "UNAUTHORIZED":
-      errorMessage =
-        "Your access token is invalid or expired. " +
-        "Delete the cached tokens and re-authorize via OAuth.";
-      break;
-    case "FORBIDDEN":
-      errorMessage =
-        "Your access token does not have permission to access this resource.";
-      break;
-    case "NOT_FOUND":
-      errorMessage = "The requested task was not found.";
-      break;
-    case "RATE_LIMITED":
-      errorMessage =
-        "You have exceeded Quire's rate limit. " +
-        "Please wait a moment before trying again.";
-      break;
-  }
-
-  return {
-    isError: true,
-    content: [
-      {
-        type: "text" as const,
-        text: `Quire API Error (${error.code}): ${errorMessage}`,
-      },
-    ],
-  };
-}
+import {
+  formatError,
+  formatAuthError,
+  formatSuccess,
+  formatMessage,
+  formatValidationError,
+  buildParams,
+} from "./utils.js";
 
 /**
  * Register all task tools with the MCP server
@@ -86,15 +43,7 @@ export function registerTaskTools(server: McpServer): void {
     async ({ projectId, parentTaskOid }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.listTasks(
@@ -102,17 +51,10 @@ export function registerTaskTools(server: McpServer): void {
         parentTaskOid
       );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -145,62 +87,26 @@ export function registerTaskTools(server: McpServer): void {
     async ({ projectId, taskId, oid }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Validate input combinations
-      if (!oid && (!projectId || taskId === undefined)) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Must provide either 'oid' or both 'projectId' and 'taskId'",
-            },
-          ],
-        };
+      // Get task by OID or by projectId + taskId
+      let result;
+      if (oid) {
+        result = await clientResult.client.getTask(oid);
+      } else if (projectId && taskId !== undefined) {
+        result = await clientResult.client.getTask(projectId, taskId);
+      } else {
+        return formatValidationError(
+          "Must provide either 'oid' or both 'projectId' and 'taskId'"
+        );
       }
 
-      const result = oid
-        ? await clientResult.client.getTask(oid)
-        : projectId && taskId !== undefined
-          ? await clientResult.client.getTask(projectId, taskId)
-          : (() => {
-              // This should be unreachable because of the validation above.
-              return {
-                isError: true,
-                content: [
-                  {
-                    type: "text" as const,
-                    text: "Error: Must provide either 'oid' or both 'projectId' and 'taskId'",
-                  },
-                ],
-              };
-            })();
-
-      if ("isError" in result) {
-        return result;
-      }
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -270,53 +176,31 @@ export function registerTaskTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Build params object, filtering out undefined values
-      const params: {
-        name: string;
-        description?: string;
-        priority?: number;
-        status?: number;
-        due?: string;
-        start?: string;
-        assignees?: string[];
-        tags?: number[];
-        parentOid?: string;
-        afterOid?: string;
-      } = { name };
-      if (description !== undefined) params.description = description;
-      if (priority !== undefined) params.priority = priority;
-      if (status !== undefined) params.status = status;
-      if (due !== undefined) params.due = due;
-      if (start !== undefined) params.start = start;
-      if (assignees !== undefined) params.assignees = assignees;
-      if (tags !== undefined) params.tags = tags;
-      if (parentOid !== undefined) params.parentOid = parentOid;
-      if (afterOid !== undefined) params.afterOid = afterOid;
+      const params = buildParams({
+        name,
+        description,
+        priority,
+        status,
+        due,
+        start,
+        assignees,
+        tags,
+        parentOid,
+        afterOid,
+      });
 
-      const result = await clientResult.client.createTask(projectId, params);
+      const result = await clientResult.client.createTask(
+        projectId,
+        params as { name: string }
+      );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -411,95 +295,41 @@ export function registerTaskTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Validate input combinations
-      if (!oid && (!projectId || taskId === undefined)) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Must provide either 'oid' or both 'projectId' and 'taskId'",
-            },
-          ],
-        };
+      const updateParams = buildParams({
+        name,
+        description,
+        priority,
+        status,
+        due,
+        start,
+        assignees,
+        addAssignees,
+        removeAssignees,
+        tags,
+        addTags,
+        removeTags,
+      });
+
+      // Update task by OID or by projectId + taskId
+      let result;
+      if (oid) {
+        result = await clientResult.client.updateTask(oid, updateParams);
+      } else if (projectId && taskId !== undefined) {
+        result = await clientResult.client.updateTask(projectId, taskId, updateParams);
+      } else {
+        return formatValidationError(
+          "Must provide either 'oid' or both 'projectId' and 'taskId'"
+        );
       }
 
-      // Build update params, filtering out undefined values
-      const updateParams: {
-        name?: string;
-        description?: string;
-        priority?: number;
-        status?: number;
-        due?: string;
-        start?: string;
-        assignees?: string[];
-        addAssignees?: string[];
-        removeAssignees?: string[];
-        tags?: number[];
-        addTags?: number[];
-        removeTags?: number[];
-      } = {};
-      if (name !== undefined) updateParams.name = name;
-      if (description !== undefined) updateParams.description = description;
-      if (priority !== undefined) updateParams.priority = priority;
-      if (status !== undefined) updateParams.status = status;
-      if (due !== undefined) updateParams.due = due;
-      if (start !== undefined) updateParams.start = start;
-      if (assignees !== undefined) updateParams.assignees = assignees;
-      if (addAssignees !== undefined) updateParams.addAssignees = addAssignees;
-      if (removeAssignees !== undefined)
-        updateParams.removeAssignees = removeAssignees;
-      if (tags !== undefined) updateParams.tags = tags;
-      if (addTags !== undefined) updateParams.addTags = addTags;
-      if (removeTags !== undefined) updateParams.removeTags = removeTags;
-
-      const result = oid
-        ? await clientResult.client.updateTask(oid, updateParams)
-        : projectId && taskId !== undefined
-          ? await clientResult.client.updateTask(
-              projectId,
-              taskId,
-              updateParams
-            )
-          : (() => {
-              // This should be unreachable because of the validation above.
-              return {
-                isError: true,
-                content: [
-                  {
-                    type: "text" as const,
-                    text: "Error: Must provide either 'oid' or both 'projectId' and 'taskId'",
-                  },
-                ],
-              };
-            })();
-
-      if ("isError" in result) {
-        return result;
-      }
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -516,30 +346,15 @@ export function registerTaskTools(server: McpServer): void {
     async ({ oid }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.deleteTask(oid);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Task ${oid} deleted successfully.`,
-          },
-        ],
-      };
+      return formatMessage(`Task ${oid} deleted successfully.`);
     }
   );
 
@@ -586,28 +401,10 @@ export function registerTaskTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Build options, filtering out undefined values
-      const options: {
-        status?: number;
-        priority?: number;
-        assigneeId?: string;
-        tagId?: number;
-      } = {};
-      if (status !== undefined) options.status = status;
-      if (priority !== undefined) options.priority = priority;
-      if (assigneeId !== undefined) options.assigneeId = assigneeId;
-      if (tagId !== undefined) options.tagId = tagId;
+      const options = buildParams({ status, priority, assigneeId, tagId });
 
       const result = await clientResult.client.searchTasks(
         projectId,
@@ -615,17 +412,10 @@ export function registerTaskTools(server: McpServer): void {
         options
       );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -683,48 +473,29 @@ export function registerTaskTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      const params: {
-        name: string;
-        description?: string;
-        priority?: number;
-        status?: number;
-        due?: string;
-        start?: string;
-        assignees?: string[];
-        tags?: number[];
-      } = { name };
-      if (description !== undefined) params.description = description;
-      if (priority !== undefined) params.priority = priority;
-      if (status !== undefined) params.status = status;
-      if (due !== undefined) params.due = due;
-      if (start !== undefined) params.start = start;
-      if (assignees !== undefined) params.assignees = assignees;
-      if (tags !== undefined) params.tags = tags;
+      const params = buildParams({
+        name,
+        description,
+        priority,
+        status,
+        due,
+        start,
+        assignees,
+        tags,
+      });
 
-      const result = await clientResult.client.createTaskAfter(taskOid, params);
+      const result = await clientResult.client.createTaskAfter(
+        taskOid,
+        params as { name: string }
+      );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -782,51 +553,29 @@ export function registerTaskTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      const params: {
-        name: string;
-        description?: string;
-        priority?: number;
-        status?: number;
-        due?: string;
-        start?: string;
-        assignees?: string[];
-        tags?: number[];
-      } = { name };
-      if (description !== undefined) params.description = description;
-      if (priority !== undefined) params.priority = priority;
-      if (status !== undefined) params.status = status;
-      if (due !== undefined) params.due = due;
-      if (start !== undefined) params.start = start;
-      if (assignees !== undefined) params.assignees = assignees;
-      if (tags !== undefined) params.tags = tags;
+      const params = buildParams({
+        name,
+        description,
+        priority,
+        status,
+        due,
+        start,
+        assignees,
+        tags,
+      });
 
       const result = await clientResult.client.createTaskBefore(
         taskOid,
-        params
+        params as { name: string }
       );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -872,27 +621,10 @@ export function registerTaskTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      const options: {
-        status?: number;
-        priority?: number;
-        assigneeId?: string;
-        tagId?: number;
-      } = {};
-      if (status !== undefined) options.status = status;
-      if (priority !== undefined) options.priority = priority;
-      if (assigneeId !== undefined) options.assigneeId = assigneeId;
-      if (tagId !== undefined) options.tagId = tagId;
+      const options = buildParams({ status, priority, assigneeId, tagId });
 
       const result = await clientResult.client.searchFolderTasks(
         folderId,
@@ -900,17 +632,10 @@ export function registerTaskTools(server: McpServer): void {
         options
       );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -957,27 +682,10 @@ export function registerTaskTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      const options: {
-        status?: number;
-        priority?: number;
-        assigneeId?: string;
-        tagId?: number;
-      } = {};
-      if (status !== undefined) options.status = status;
-      if (priority !== undefined) options.priority = priority;
-      if (assigneeId !== undefined) options.assigneeId = assigneeId;
-      if (tagId !== undefined) options.tagId = tagId;
+      const options = buildParams({ status, priority, assigneeId, tagId });
 
       const result = await clientResult.client.searchOrganizationTasks(
         organizationId,
@@ -985,17 +693,10 @@ export function registerTaskTools(server: McpServer): void {
         options
       );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "task");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 }

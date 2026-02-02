@@ -7,57 +7,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getQuireClient } from "../quire/client-factory.js";
-
-interface ToolTextContent {
-  type: "text";
-  text: string;
-}
-
-interface ToolErrorResponse {
-  [x: string]: unknown;
-  isError: true;
-  content: ToolTextContent[];
-}
-
-/**
- * Format error response for MCP tools
- */
-function formatError(error: {
-  code: string;
-  message: string;
-}): ToolErrorResponse {
-  let errorMessage = error.message;
-
-  switch (error.code) {
-    case "UNAUTHORIZED":
-      errorMessage =
-        "Your access token is invalid or expired. " +
-        "Delete the cached tokens and re-authorize via OAuth.";
-      break;
-    case "FORBIDDEN":
-      errorMessage =
-        "Your access token does not have permission to access this resource.";
-      break;
-    case "NOT_FOUND":
-      errorMessage = "The requested project was not found.";
-      break;
-    case "RATE_LIMITED":
-      errorMessage =
-        "You have exceeded Quire's rate limit. " +
-        "Please wait a moment before trying again.";
-      break;
-  }
-
-  return {
-    isError: true,
-    content: [
-      {
-        type: "text" as const,
-        text: `Quire API Error (${error.code}): ${errorMessage}`,
-      },
-    ],
-  };
-}
+import {
+  formatError,
+  formatAuthError,
+  formatSuccess,
+  formatMessage,
+  buildParams,
+} from "./utils.js";
 
 /**
  * Register all project tools with the MCP server
@@ -83,30 +39,15 @@ export function registerProjectTools(server: McpServer): void {
     async ({ organizationId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.listProjects(organizationId);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "project");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -128,30 +69,15 @@ export function registerProjectTools(server: McpServer): void {
     async ({ id }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.getProject(id);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "project");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -211,51 +137,26 @@ export function registerProjectTools(server: McpServer): void {
     ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Build params object, filtering out undefined values
-      const params: {
-        name?: string;
-        description?: string;
-        icon?: string;
-        iconColor?: string;
-        archived?: boolean;
-        followers?: string[];
-        addFollowers?: string[];
-        removeFollowers?: string[];
-      } = {};
-      if (name !== undefined) params.name = name;
-      if (description !== undefined) params.description = description;
-      if (icon !== undefined) params.icon = icon;
-      if (iconColor !== undefined) params.iconColor = iconColor;
-      if (archived !== undefined) params.archived = archived;
-      if (followers !== undefined) params.followers = followers;
-      if (addFollowers !== undefined) params.addFollowers = addFollowers;
-      if (removeFollowers !== undefined)
-        params.removeFollowers = removeFollowers;
+      const params = buildParams({
+        name,
+        description,
+        icon,
+        iconColor,
+        archived,
+        followers,
+        addFollowers,
+        removeFollowers,
+      });
 
       const result = await clientResult.client.updateProject(id, params);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "project");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -281,36 +182,19 @@ export function registerProjectTools(server: McpServer): void {
     async ({ id, format }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.exportProject(id, format);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "project");
       }
 
       // Format output based on export type
-      const output =
-        format === "csv"
-          ? (result.data as string)
-          : JSON.stringify(result.data, null, 2);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: output,
-          },
-        ],
-      };
+      if (format === "csv") {
+        return formatMessage(result.data as string);
+      }
+      return formatSuccess(result.data);
     }
   );
 }

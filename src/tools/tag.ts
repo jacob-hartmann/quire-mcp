@@ -7,57 +7,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getQuireClient } from "../quire/client-factory.js";
-
-interface ToolTextContent {
-  type: "text";
-  text: string;
-}
-
-interface ToolErrorResponse {
-  [x: string]: unknown;
-  isError: true;
-  content: ToolTextContent[];
-}
-
-/**
- * Format error response for MCP tools
- */
-function formatError(error: {
-  code: string;
-  message: string;
-}): ToolErrorResponse {
-  let errorMessage = error.message;
-
-  switch (error.code) {
-    case "UNAUTHORIZED":
-      errorMessage =
-        "Your access token is invalid or expired. " +
-        "Delete the cached tokens and re-authorize via OAuth.";
-      break;
-    case "FORBIDDEN":
-      errorMessage =
-        "Your access token does not have permission to access this resource.";
-      break;
-    case "NOT_FOUND":
-      errorMessage = "The requested tag was not found.";
-      break;
-    case "RATE_LIMITED":
-      errorMessage =
-        "You have exceeded Quire's rate limit. " +
-        "Please wait a moment before trying again.";
-      break;
-  }
-
-  return {
-    isError: true,
-    content: [
-      {
-        type: "text" as const,
-        text: `Quire API Error (${error.code}): ${errorMessage}`,
-      },
-    ],
-  };
-}
+import {
+  formatError,
+  formatAuthError,
+  formatSuccess,
+  formatMessage,
+  buildParams,
+} from "./utils.js";
 
 /**
  * Register all tag tools with the MCP server
@@ -79,30 +35,15 @@ export function registerTagTools(server: McpServer): void {
     async ({ projectId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.listTags(projectId);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "tag");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -118,30 +59,15 @@ export function registerTagTools(server: McpServer): void {
     async ({ oid }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.getTag(oid);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "tag");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -165,33 +91,20 @@ export function registerTagTools(server: McpServer): void {
     async ({ projectId, name, color }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      const params: { name: string; color?: string } = { name };
-      if (color !== undefined) params.color = color;
+      const params = buildParams({ name, color });
 
-      const result = await clientResult.client.createTag(projectId, params);
+      const result = await clientResult.client.createTag(
+        projectId,
+        params as { name: string; color?: string }
+      );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "tag");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -212,34 +125,17 @@ export function registerTagTools(server: McpServer): void {
     async ({ oid, name, color }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      const params: { name?: string; color?: string } = {};
-      if (name !== undefined) params.name = name;
-      if (color !== undefined) params.color = color;
+      const params = buildParams({ name, color });
 
       const result = await clientResult.client.updateTag(oid, params);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "tag");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -256,30 +152,15 @@ export function registerTagTools(server: McpServer): void {
     async ({ oid }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.deleteTag(oid);
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "tag");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Tag ${oid} deleted successfully.`,
-          },
-        ],
-      };
+      return formatMessage(`Tag ${oid} deleted successfully.`);
     }
   );
 }

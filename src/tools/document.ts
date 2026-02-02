@@ -7,57 +7,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getQuireClient } from "../quire/client-factory.js";
-
-interface ToolTextContent {
-  type: "text";
-  text: string;
-}
-
-interface ToolErrorResponse {
-  [x: string]: unknown;
-  isError: true;
-  content: ToolTextContent[];
-}
-
-/**
- * Format error response for MCP tools
- */
-function formatError(error: {
-  code: string;
-  message: string;
-}): ToolErrorResponse {
-  let errorMessage = error.message;
-
-  switch (error.code) {
-    case "UNAUTHORIZED":
-      errorMessage =
-        "Your access token is invalid or expired. " +
-        "Delete the cached tokens and re-authorize via OAuth.";
-      break;
-    case "FORBIDDEN":
-      errorMessage =
-        "Your access token does not have permission to access this resource.";
-      break;
-    case "NOT_FOUND":
-      errorMessage = "The requested document was not found.";
-      break;
-    case "RATE_LIMITED":
-      errorMessage =
-        "You have exceeded Quire's rate limit. " +
-        "Please wait a moment before trying again.";
-      break;
-  }
-
-  return {
-    isError: true,
-    content: [
-      {
-        type: "text" as const,
-        text: `Quire API Error (${error.code}): ${errorMessage}`,
-      },
-    ],
-  };
-}
+import {
+  formatError,
+  formatAuthError,
+  formatSuccess,
+  formatMessage,
+  formatValidationError,
+  buildParams,
+} from "./utils.js";
 
 /**
  * Register all document tools with the MCP server
@@ -85,37 +42,21 @@ export function registerDocumentTools(server: McpServer): void {
     async ({ ownerType, ownerId, name, content }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      const params: { name: string; content?: string } = { name };
-      if (content !== undefined) params.content = content;
+      const params = buildParams({ name, content });
 
       const result = await clientResult.client.createDocument(
         ownerType,
         ownerId,
-        params
+        params as { name: string; content?: string }
       );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "document");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -149,30 +90,10 @@ export function registerDocumentTools(server: McpServer): void {
     async ({ oid, ownerType, ownerId, documentId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Validate input combinations
-      if (!oid && (!ownerType || !ownerId || !documentId)) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'",
-            },
-          ],
-        };
-      }
-
+      // Get document by OID or by ownerType + ownerId + documentId
       let result;
       if (oid) {
         result = await clientResult.client.getDocument(oid);
@@ -183,29 +104,16 @@ export function registerDocumentTools(server: McpServer): void {
           documentId
         );
       } else {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Invalid parameters",
-            },
-          ],
-        };
+        return formatValidationError(
+          "Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'"
+        );
       }
 
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "document");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -226,15 +134,7 @@ export function registerDocumentTools(server: McpServer): void {
     async ({ ownerType, ownerId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
       const result = await clientResult.client.listDocuments(
@@ -242,17 +142,10 @@ export function registerDocumentTools(server: McpServer): void {
         ownerId
       );
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "document");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -291,34 +184,12 @@ export function registerDocumentTools(server: McpServer): void {
     async ({ oid, ownerType, ownerId, documentId, name, content }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Validate input combinations
-      if (!oid && (!ownerType || !ownerId || !documentId)) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'",
-            },
-          ],
-        };
-      }
+      const params = buildParams({ name, content });
 
-      const params: { name?: string; content?: string } = {};
-      if (name !== undefined) params.name = name;
-      if (content !== undefined) params.content = content;
-
+      // Update document by OID or by ownerType + ownerId + documentId
       let result;
       if (oid) {
         result = await clientResult.client.updateDocument(oid, params);
@@ -330,29 +201,16 @@ export function registerDocumentTools(server: McpServer): void {
           params
         );
       } else {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Invalid parameters",
-            },
-          ],
-        };
+        return formatValidationError(
+          "Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'"
+        );
       }
 
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "document");
       }
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(result.data, null, 2),
-          },
-        ],
-      };
+      return formatSuccess(result.data);
     }
   );
 
@@ -386,30 +244,10 @@ export function registerDocumentTools(server: McpServer): void {
     async ({ oid, ownerType, ownerId, documentId }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: `Authentication Error: ${clientResult.error}`,
-            },
-          ],
-        };
+        return formatAuthError(clientResult.error);
       }
 
-      // Validate input combinations
-      if (!oid && (!ownerType || !ownerId || !documentId)) {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'",
-            },
-          ],
-        };
-      }
-
+      // Delete document by OID or by ownerType + ownerId + documentId
       let result;
       if (oid) {
         result = await clientResult.client.deleteDocument(oid);
@@ -420,30 +258,17 @@ export function registerDocumentTools(server: McpServer): void {
           documentId
         );
       } else {
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: "Error: Invalid parameters",
-            },
-          ],
-        };
+        return formatValidationError(
+          "Must provide either 'oid' or all of 'ownerType', 'ownerId', and 'documentId'"
+        );
       }
 
       if (!result.success) {
-        return formatError(result.error);
+        return formatError(result.error, "document");
       }
 
       const identifier = oid ?? `${ownerType}/${ownerId}/${documentId}`;
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Document ${identifier} deleted successfully.`,
-          },
-        ],
-      };
+      return formatMessage(`Document ${identifier} deleted successfully.`);
     }
   );
 }

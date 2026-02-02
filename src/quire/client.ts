@@ -5,6 +5,7 @@
  * - Timeouts
  * - Retry/backoff on 429/503
  * - Consistent error mapping
+ * - Runtime response validation with Zod schemas
  *
  * Rate Limits (Free plan):
  * - 25 requests per minute
@@ -13,6 +14,7 @@
  * @see https://quire.io/dev/api/
  */
 
+import type { ZodType } from "zod";
 import type {
   QuireUser,
   QuireResult,
@@ -47,6 +49,25 @@ import type {
   SendNotificationParams,
 } from "./types.js";
 import { QuireClientError } from "./types.js";
+import {
+  QuireUserSchema,
+  QuireOrganizationSchema,
+  QuireProjectSchema,
+  QuireTaskSchema,
+  QuireTagSchema,
+  QuireCommentSchema,
+  QuireStatusSchema,
+  QuirePartnerSchema,
+  QuireDocumentSchema,
+  QuireSublistSchema,
+  QuireChatSchema,
+  QuireStorageEntrySchema,
+  QuireAttachmentSchema,
+  DeleteOidResponseSchema,
+  DeleteValueResponseSchema,
+  DeleteNameResponseSchema,
+  SuccessResponseSchema,
+} from "./schemas.js";
 
 const QUIRE_API_BASE_URL = "https://quire.io/api";
 const DEFAULT_TIMEOUT_MS = 30000;
@@ -138,12 +159,18 @@ export class QuireClient {
 
   /**
    * Make an authenticated request to the Quire API
+   *
+   * @param endpoint - API endpoint path
+   * @param options - Request options (method, body, schema)
+   * @param retryCount - Current retry count (internal use)
    */
   private async request<T>(
     endpoint: string,
     options?: {
       method?: "GET" | "POST" | "PUT" | "DELETE";
       body?: Record<string, unknown>;
+      /** Zod schema for runtime response validation (uses ZodType<unknown> to avoid exactOptionalPropertyTypes conflicts) */
+      schema?: ZodType<unknown>;
     },
     retryCount = 0
   ): Promise<QuireResult<T>> {
@@ -172,8 +199,30 @@ export class QuireClient {
       const response = await fetch(url, fetchOptions);
 
       if (response.ok) {
-        const data = (await response.json()) as T;
-        return { success: true, data };
+        const rawData: unknown = await response.json();
+
+        // Validate response with Zod schema if provided
+        if (options?.schema) {
+          const parseResult = options.schema.safeParse(rawData);
+          if (!parseResult.success) {
+            console.error(
+              "[quire-mcp] API response validation failed:",
+              parseResult.error.message
+            );
+            return {
+              success: false,
+              error: new QuireClientError(
+                `API response validation failed: ${parseResult.error.message}`,
+                "UNKNOWN"
+              ),
+            };
+          }
+          // Cast to T after validation - schema ensures shape is correct
+          return { success: true, data: parseResult.data as T };
+        }
+
+        // Fallback to type assertion if no schema (for backwards compatibility)
+        return { success: true, data: rawData as T };
       }
 
       // Handle error responses
@@ -181,7 +230,15 @@ export class QuireClient {
 
       // Retry logic for retryable errors
       if (retryable && retryCount < this.maxRetries) {
-        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
+        // Respect Retry-After header if present (for rate limiting)
+        let delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
+        const retryAfter = response.headers.get("Retry-After");
+        if (retryAfter) {
+          const retryAfterSeconds = Number.parseInt(retryAfter, 10);
+          if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+            delay = retryAfterSeconds * 1000;
+          }
+        }
         console.error(
           `[quire-mcp] Request failed with ${response.status}, retrying in ${delay}ms (attempt ${retryCount + 1}/${this.maxRetries})`
         );
@@ -243,7 +300,9 @@ export class QuireClient {
    * @see https://quire.io/dev/api/#userIdMe
    */
   async getMe(): Promise<QuireResult<QuireUser>> {
-    return this.request<QuireUser>("/user/id/me");
+    return this.request<QuireUser>("/user/id/me", {
+      schema: QuireUserSchema,
+    });
   }
 
   // =====================
@@ -256,7 +315,9 @@ export class QuireClient {
    * @see https://quire.io/dev/api/#organization
    */
   async listOrganizations(): Promise<QuireResult<QuireOrganization[]>> {
-    return this.request<QuireOrganization[]>("/organization/list");
+    return this.request<QuireOrganization[]>("/organization/list", {
+      schema: QuireOrganizationSchema.array(),
+    });
   }
 
   /**
@@ -270,7 +331,9 @@ export class QuireClient {
     const endpoint = isOid(idOrOid)
       ? `/organization/${idOrOid}`
       : `/organization/id/${idOrOid}`;
-    return this.request<QuireOrganization>(endpoint);
+    return this.request<QuireOrganization>(endpoint, {
+      schema: QuireOrganizationSchema,
+    });
   }
 
   /**
@@ -288,6 +351,7 @@ export class QuireClient {
     return this.request<QuireOrganization>(endpoint, {
       method: "PUT",
       body: params as Record<string, unknown>,
+      schema: QuireOrganizationSchema,
     });
   }
 
@@ -308,9 +372,13 @@ export class QuireClient {
       const endpoint = isOid(organizationId)
         ? `/project/list/${organizationId}`
         : `/project/list/id/${organizationId}`;
-      return this.request<QuireProject[]>(endpoint);
+      return this.request<QuireProject[]>(endpoint, {
+        schema: QuireProjectSchema.array(),
+      });
     }
-    return this.request<QuireProject[]>("/project/list");
+    return this.request<QuireProject[]>("/project/list", {
+      schema: QuireProjectSchema.array(),
+    });
   }
 
   /**
@@ -322,7 +390,9 @@ export class QuireClient {
     const endpoint = isOid(idOrOid)
       ? `/project/${idOrOid}`
       : `/project/id/${idOrOid}`;
-    return this.request<QuireProject>(endpoint);
+    return this.request<QuireProject>(endpoint, {
+      schema: QuireProjectSchema,
+    });
   }
 
   /**
@@ -340,6 +410,7 @@ export class QuireClient {
     return this.request<QuireProject>(endpoint, {
       method: "PUT",
       body: params as Record<string, unknown>,
+      schema: QuireProjectSchema,
     });
   }
 
@@ -396,7 +467,9 @@ export class QuireClient {
         };
       }
     }
-    return this.request<QuireTask[]>(endpoint);
+    return this.request<QuireTask[]>(endpoint, {
+      schema: QuireTaskSchema.array(),
+    });
   }
 
   // =====================
@@ -414,12 +487,16 @@ export class QuireClient {
   ): Promise<QuireResult<QuireTask[]>> {
     if (parentTaskOid) {
       // Subtask listing endpoint uses task OID directly
-      return this.request<QuireTask[]>(`/task/${parentTaskOid}/task/list`);
+      return this.request<QuireTask[]>(`/task/${parentTaskOid}/task/list`, {
+        schema: QuireTaskSchema.array(),
+      });
     }
     const endpoint = isOid(projectIdOrOid)
       ? `/task/list/${projectIdOrOid}`
       : `/task/list/id/${projectIdOrOid}`;
-    return this.request<QuireTask[]>(endpoint);
+    return this.request<QuireTask[]>(endpoint, {
+      schema: QuireTaskSchema.array(),
+    });
   }
 
   /**
@@ -436,10 +513,14 @@ export class QuireClient {
       const endpoint = isOid(projectIdOrOid)
         ? `/task/${projectIdOrOid}/${taskId}`
         : `/task/id/${projectIdOrOid}/${taskId}`;
-      return this.request<QuireTask>(endpoint);
+      return this.request<QuireTask>(endpoint, {
+        schema: QuireTaskSchema,
+      });
     }
     // If no taskId provided, assume projectIdOrOid is actually the task OID
-    return this.request<QuireTask>(`/task/${projectIdOrOid}`);
+    return this.request<QuireTask>(`/task/${projectIdOrOid}`, {
+      schema: QuireTaskSchema,
+    });
   }
 
   /**
@@ -464,6 +545,7 @@ export class QuireClient {
     return this.request<QuireTask>(endpoint, {
       method: "POST",
       body,
+      schema: QuireTaskSchema,
     });
   }
 
@@ -485,12 +567,14 @@ export class QuireClient {
       return this.request<QuireTask>(endpoint, {
         method: "PUT",
         body: (params ?? {}) as Record<string, unknown>,
+        schema: QuireTaskSchema,
       });
     }
     // Called with OID and params - OID is for the task itself
     return this.request<QuireTask>(`/task/${projectIdOrOid}`, {
       method: "PUT",
       body: taskIdOrParams as Record<string, unknown>,
+      schema: QuireTaskSchema,
     });
   }
 
@@ -502,6 +586,7 @@ export class QuireClient {
   async deleteTask(oid: string): Promise<QuireResult<{ oid: string }>> {
     return this.request<{ oid: string }>(`/task/${oid}`, {
       method: "DELETE",
+      schema: DeleteOidResponseSchema,
     });
   }
 
@@ -536,7 +621,9 @@ export class QuireClient {
     const endpoint = isOid(projectIdOrOid)
       ? `/task/search/${projectIdOrOid}`
       : `/task/search/id/${projectIdOrOid}`;
-    return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`);
+    return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`, {
+      schema: QuireTaskSchema.array(),
+    });
   }
 
   /**
@@ -557,6 +644,7 @@ export class QuireClient {
     return this.request<QuireTask>(`/task/after/${taskOid}`, {
       method: "POST",
       body,
+      schema: QuireTaskSchema,
     });
   }
 
@@ -578,6 +666,7 @@ export class QuireClient {
     return this.request<QuireTask>(`/task/before/${taskOid}`, {
       method: "POST",
       body,
+      schema: QuireTaskSchema,
     });
   }
 
@@ -612,7 +701,9 @@ export class QuireClient {
     const endpoint = isOid(folderIdOrOid)
       ? `/task/search/folder/${folderIdOrOid}`
       : `/task/search/folder/id/${folderIdOrOid}`;
-    return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`);
+    return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`, {
+      schema: QuireTaskSchema.array(),
+    });
   }
 
   /**
@@ -646,7 +737,9 @@ export class QuireClient {
     const endpoint = isOid(orgIdOrOid)
       ? `/task/search/organization/${orgIdOrOid}`
       : `/task/search/organization/id/${orgIdOrOid}`;
-    return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`);
+    return this.request<QuireTask[]>(`${endpoint}?${queryParams.toString()}`, {
+      schema: QuireTaskSchema.array(),
+    });
   }
 
   // =====================
@@ -662,7 +755,9 @@ export class QuireClient {
     const endpoint = isOid(projectIdOrOid)
       ? `/tag/list/${projectIdOrOid}`
       : `/tag/list/id/${projectIdOrOid}`;
-    return this.request<QuireTag[]>(endpoint);
+    return this.request<QuireTag[]>(endpoint, {
+      schema: QuireTagSchema.array(),
+    });
   }
 
   /**
@@ -671,7 +766,9 @@ export class QuireClient {
    * @see https://quire.io/dev/api/#tagOid
    */
   async getTag(oid: string): Promise<QuireResult<QuireTag>> {
-    return this.request<QuireTag>(`/tag/${oid}`);
+    return this.request<QuireTag>(`/tag/${oid}`, {
+      schema: QuireTagSchema,
+    });
   }
 
   /**
@@ -695,6 +792,7 @@ export class QuireClient {
     return this.request<QuireTag>(endpoint, {
       method: "POST",
       body,
+      schema: QuireTagSchema,
     });
   }
 
@@ -710,6 +808,7 @@ export class QuireClient {
     return this.request<QuireTag>(`/tag/${oid}`, {
       method: "PUT",
       body: params as Record<string, unknown>,
+      schema: QuireTagSchema,
     });
   }
 
@@ -721,6 +820,7 @@ export class QuireClient {
   async deleteTag(oid: string): Promise<QuireResult<{ oid: string }>> {
     return this.request<{ oid: string }>(`/tag/${oid}`, {
       method: "DELETE",
+      schema: DeleteOidResponseSchema,
     });
   }
 
@@ -742,11 +842,14 @@ export class QuireClient {
       const endpoint = isOid(taskOidOrProjectId)
         ? `/comment/list/${taskOidOrProjectId}/task/${taskId}`
         : `/comment/list/id/${taskOidOrProjectId}/task/${taskId}`;
-      return this.request<QuireComment[]>(endpoint);
+      return this.request<QuireComment[]>(endpoint, {
+        schema: QuireCommentSchema.array(),
+      });
     }
     // Using task OID directly
     return this.request<QuireComment[]>(
-      `/comment/list/task/${taskOidOrProjectId}`
+      `/comment/list/task/${taskOidOrProjectId}`,
+      { schema: QuireCommentSchema.array() }
     );
   }
 
@@ -776,6 +879,7 @@ export class QuireClient {
       return this.request<QuireComment>(endpoint, {
         method: "POST",
         body,
+        schema: QuireCommentSchema,
       });
     }
     // Using task OID directly
@@ -788,6 +892,7 @@ export class QuireClient {
     return this.request<QuireComment>(`/comment/task/${taskOidOrProjectId}`, {
       method: "POST",
       body,
+      schema: QuireCommentSchema,
     });
   }
 
@@ -809,6 +914,7 @@ export class QuireClient {
     return this.request<QuireComment>(`/comment/${commentOid}`, {
       method: "PUT",
       body,
+      schema: QuireCommentSchema,
     });
   }
 
@@ -822,6 +928,7 @@ export class QuireClient {
   ): Promise<QuireResult<{ oid: string }>> {
     return this.request<{ oid: string }>(`/comment/${commentOid}`, {
       method: "DELETE",
+      schema: DeleteOidResponseSchema,
     });
   }
 
@@ -840,11 +947,14 @@ export class QuireClient {
       const endpoint = isOid(chatOidOrProjectId)
         ? `/comment/list/${chatOidOrProjectId}/chat/${chatId}`
         : `/comment/list/id/${chatOidOrProjectId}/chat/${chatId}`;
-      return this.request<QuireComment[]>(endpoint);
+      return this.request<QuireComment[]>(endpoint, {
+        schema: QuireCommentSchema.array(),
+      });
     }
     // Using chat OID directly
     return this.request<QuireComment[]>(
-      `/comment/list/chat/${chatOidOrProjectId}`
+      `/comment/list/chat/${chatOidOrProjectId}`,
+      { schema: QuireCommentSchema.array() }
     );
   }
 
@@ -884,6 +994,7 @@ export class QuireClient {
     return this.request<QuireComment>(endpoint, {
       method: "POST",
       body,
+      schema: QuireCommentSchema,
     });
   }
 
@@ -900,7 +1011,9 @@ export class QuireClient {
     const endpoint = isOid(idOrOid)
       ? `/user/${idOrOid}`
       : `/user/id/${idOrOid}`;
-    return this.request<QuireUser>(endpoint);
+    return this.request<QuireUser>(endpoint, {
+      schema: QuireUserSchema,
+    });
   }
 
   /**
@@ -909,7 +1022,9 @@ export class QuireClient {
    * @see https://quire.io/dev/api/#user
    */
   async listUsers(): Promise<QuireResult<QuireUser[]>> {
-    return this.request<QuireUser[]>("/user/list");
+    return this.request<QuireUser[]>("/user/list", {
+      schema: QuireUserSchema.array(),
+    });
   }
 
   /**
@@ -923,7 +1038,9 @@ export class QuireClient {
     const endpoint = isOid(projectIdOrOid)
       ? `/user/list/project/${projectIdOrOid}`
       : `/user/list/project/id/${projectIdOrOid}`;
-    return this.request<QuireUser[]>(endpoint);
+    return this.request<QuireUser[]>(endpoint, {
+      schema: QuireUserSchema.array(),
+    });
   }
 
   // =====================
@@ -941,7 +1058,9 @@ export class QuireClient {
     const endpoint = isOid(projectIdOrOid)
       ? `/status/list/${projectIdOrOid}`
       : `/status/list/id/${projectIdOrOid}`;
-    return this.request<QuireStatus[]>(endpoint);
+    return this.request<QuireStatus[]>(endpoint, {
+      schema: QuireStatusSchema.array(),
+    });
   }
 
   /**
@@ -956,7 +1075,9 @@ export class QuireClient {
     const endpoint = isOid(projectIdOrOid)
       ? `/status/${projectIdOrOid}/${value}`
       : `/status/id/${projectIdOrOid}/${value}`;
-    return this.request<QuireStatus>(endpoint);
+    return this.request<QuireStatus>(endpoint, {
+      schema: QuireStatusSchema,
+    });
   }
 
   /**
@@ -980,6 +1101,7 @@ export class QuireClient {
     return this.request<QuireStatus>(endpoint, {
       method: "POST",
       body,
+      schema: QuireStatusSchema,
     });
   }
 
@@ -999,6 +1121,7 @@ export class QuireClient {
     return this.request<QuireStatus>(endpoint, {
       method: "PUT",
       body: params as Record<string, unknown>,
+      schema: QuireStatusSchema,
     });
   }
 
@@ -1016,6 +1139,7 @@ export class QuireClient {
       : `/status/id/${projectIdOrOid}/${value}`;
     return this.request<{ value: number }>(endpoint, {
       method: "DELETE",
+      schema: DeleteValueResponseSchema,
     });
   }
 
@@ -1029,7 +1153,9 @@ export class QuireClient {
    * @see https://quire.io/dev/api/#partnerOid
    */
   async getPartner(oid: string): Promise<QuireResult<QuirePartner>> {
-    return this.request<QuirePartner>(`/partner/${oid}`);
+    return this.request<QuirePartner>(`/partner/${oid}`, {
+      schema: QuirePartnerSchema,
+    });
   }
 
   /**
@@ -1043,7 +1169,9 @@ export class QuireClient {
     const endpoint = isOid(projectIdOrOid)
       ? `/partner/list/${projectIdOrOid}`
       : `/partner/list/id/${projectIdOrOid}`;
-    return this.request<QuirePartner[]>(endpoint);
+    return this.request<QuirePartner[]>(endpoint, {
+      schema: QuirePartnerSchema.array(),
+    });
   }
 
   // =====================
@@ -1072,6 +1200,7 @@ export class QuireClient {
     return this.request<QuireDocument>(endpoint, {
       method: "POST",
       body,
+      schema: QuireDocumentSchema,
     });
   }
 
@@ -1092,10 +1221,14 @@ export class QuireClient {
       const endpoint = isOid(ownerId)
         ? `/doc/${ownerType}/${ownerId}/${documentId}`
         : `/doc/id/${ownerType}/${ownerId}/${documentId}`;
-      return this.request<QuireDocument>(endpoint);
+      return this.request<QuireDocument>(endpoint, {
+        schema: QuireDocumentSchema,
+      });
     }
     // Using OID directly
-    return this.request<QuireDocument>(`/doc/${oidOrOwnerType}`);
+    return this.request<QuireDocument>(`/doc/${oidOrOwnerType}`, {
+      schema: QuireDocumentSchema,
+    });
   }
 
   /**
@@ -1110,7 +1243,9 @@ export class QuireClient {
     const endpoint = isOid(ownerIdOrOid)
       ? `/doc/list/${ownerType}/${ownerIdOrOid}`
       : `/doc/list/${ownerType}/id/${ownerIdOrOid}`;
-    return this.request<QuireDocument[]>(endpoint);
+    return this.request<QuireDocument[]>(endpoint, {
+      schema: QuireDocumentSchema.array(),
+    });
   }
 
   /**
@@ -1152,6 +1287,7 @@ export class QuireClient {
     return this.request<QuireDocument>(endpoint, {
       method: "PUT",
       body,
+      schema: QuireDocumentSchema,
     });
   }
 
@@ -1179,6 +1315,7 @@ export class QuireClient {
     }
     return this.request<{ oid: string }>(endpoint, {
       method: "DELETE",
+      schema: DeleteOidResponseSchema,
     });
   }
 
@@ -1208,6 +1345,7 @@ export class QuireClient {
     return this.request<QuireSublist>(endpoint, {
       method: "POST",
       body,
+      schema: QuireSublistSchema,
     });
   }
 
@@ -1228,10 +1366,14 @@ export class QuireClient {
       const endpoint = isOid(ownerId)
         ? `/sublist/${ownerType}/${ownerId}/${sublistId}`
         : `/sublist/id/${ownerType}/${ownerId}/${sublistId}`;
-      return this.request<QuireSublist>(endpoint);
+      return this.request<QuireSublist>(endpoint, {
+        schema: QuireSublistSchema,
+      });
     }
     // Using OID directly
-    return this.request<QuireSublist>(`/sublist/${oidOrOwnerType}`);
+    return this.request<QuireSublist>(`/sublist/${oidOrOwnerType}`, {
+      schema: QuireSublistSchema,
+    });
   }
 
   /**
@@ -1246,7 +1388,9 @@ export class QuireClient {
     const endpoint = isOid(ownerIdOrOid)
       ? `/sublist/list/${ownerType}/${ownerIdOrOid}`
       : `/sublist/list/${ownerType}/id/${ownerIdOrOid}`;
-    return this.request<QuireSublist[]>(endpoint);
+    return this.request<QuireSublist[]>(endpoint, {
+      schema: QuireSublistSchema.array(),
+    });
   }
 
   /**
@@ -1288,6 +1432,7 @@ export class QuireClient {
     return this.request<QuireSublist>(endpoint, {
       method: "PUT",
       body,
+      schema: QuireSublistSchema,
     });
   }
 
@@ -1315,6 +1460,7 @@ export class QuireClient {
     }
     return this.request<{ oid: string }>(endpoint, {
       method: "DELETE",
+      schema: DeleteOidResponseSchema,
     });
   }
 
@@ -1344,6 +1490,7 @@ export class QuireClient {
     return this.request<QuireChat>(endpoint, {
       method: "POST",
       body,
+      schema: QuireChatSchema,
     });
   }
 
@@ -1364,10 +1511,14 @@ export class QuireClient {
       const endpoint = isOid(ownerId)
         ? `/chat/${ownerType}/${ownerId}/${chatId}`
         : `/chat/id/${ownerType}/${ownerId}/${chatId}`;
-      return this.request<QuireChat>(endpoint);
+      return this.request<QuireChat>(endpoint, {
+        schema: QuireChatSchema,
+      });
     }
     // Using OID directly
-    return this.request<QuireChat>(`/chat/${oidOrOwnerType}`);
+    return this.request<QuireChat>(`/chat/${oidOrOwnerType}`, {
+      schema: QuireChatSchema,
+    });
   }
 
   /**
@@ -1382,7 +1533,9 @@ export class QuireClient {
     const endpoint = isOid(ownerIdOrOid)
       ? `/chat/list/${ownerType}/${ownerIdOrOid}`
       : `/chat/list/${ownerType}/id/${ownerIdOrOid}`;
-    return this.request<QuireChat[]>(endpoint);
+    return this.request<QuireChat[]>(endpoint, {
+      schema: QuireChatSchema.array(),
+    });
   }
 
   /**
@@ -1424,6 +1577,7 @@ export class QuireClient {
     return this.request<QuireChat>(endpoint, {
       method: "PUT",
       body,
+      schema: QuireChatSchema,
     });
   }
 
@@ -1451,6 +1605,7 @@ export class QuireClient {
     }
     return this.request<{ oid: string }>(endpoint, {
       method: "DELETE",
+      schema: DeleteOidResponseSchema,
     });
   }
 
@@ -1465,7 +1620,8 @@ export class QuireClient {
    */
   async getStorageValue(name: string): Promise<QuireResult<QuireStorageEntry>> {
     return this.request<QuireStorageEntry>(
-      `/storage/${encodeURIComponent(name)}`
+      `/storage/${encodeURIComponent(name)}`,
+      { schema: QuireStorageEntrySchema }
     );
   }
 
@@ -1478,7 +1634,8 @@ export class QuireClient {
     prefix: string
   ): Promise<QuireResult<QuireStorageEntry[]>> {
     return this.request<QuireStorageEntry[]>(
-      `/storage/list/${encodeURIComponent(prefix)}`
+      `/storage/list/${encodeURIComponent(prefix)}`,
+      { schema: QuireStorageEntrySchema.array() }
     );
   }
 
@@ -1496,6 +1653,7 @@ export class QuireClient {
       {
         method: "PUT",
         body: { value },
+        schema: QuireStorageEntrySchema,
       }
     );
   }
@@ -1512,6 +1670,7 @@ export class QuireClient {
       `/storage/${encodeURIComponent(name)}`,
       {
         method: "DELETE",
+        schema: DeleteNameResponseSchema,
       }
     );
   }
@@ -1537,6 +1696,7 @@ export class QuireClient {
     return this.request<{ success: boolean }>("/notification", {
       method: "POST",
       body,
+      schema: SuccessResponseSchema,
     });
   }
 
@@ -1569,8 +1729,23 @@ export class QuireClient {
       });
 
       if (response.ok) {
-        const data = (await response.json()) as QuireAttachment;
-        return { success: true, data };
+        const rawData: unknown = await response.json();
+        const parseResult = QuireAttachmentSchema.safeParse(rawData);
+        if (!parseResult.success) {
+          console.error(
+            "[quire-mcp] Attachment response validation failed:",
+            parseResult.error.message
+          );
+          return {
+            success: false,
+            error: new QuireClientError(
+              `API response validation failed: ${parseResult.error.message}`,
+              "UNKNOWN"
+            ),
+          };
+        }
+        // Cast to QuireAttachment after validation
+        return { success: true, data: parseResult.data as QuireAttachment };
       }
 
       const { code, retryable } = parseErrorCode(response.status);
@@ -1643,8 +1818,23 @@ export class QuireClient {
       });
 
       if (response.ok) {
-        const data = (await response.json()) as QuireAttachment;
-        return { success: true, data };
+        const rawData: unknown = await response.json();
+        const parseResult = QuireAttachmentSchema.safeParse(rawData);
+        if (!parseResult.success) {
+          console.error(
+            "[quire-mcp] Attachment response validation failed:",
+            parseResult.error.message
+          );
+          return {
+            success: false,
+            error: new QuireClientError(
+              `API response validation failed: ${parseResult.error.message}`,
+              "UNKNOWN"
+            ),
+          };
+        }
+        // Cast to QuireAttachment after validation
+        return { success: true, data: parseResult.data as QuireAttachment };
       }
 
       const { code, retryable } = parseErrorCode(response.status);

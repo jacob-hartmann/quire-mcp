@@ -52,11 +52,7 @@ export class QuireClientsStore implements OAuthRegisteredClientsStore {
   private clients = new Map<string, OAuthClientInformationFull>();
 
   getClient(clientId: string): OAuthClientInformationFull | undefined {
-    const client = this.clients.get(clientId);
-    console.error(
-      `[quire-mcp] getClient(${clientId}): ${client ? "found" : "NOT FOUND"}`
-    );
-    return client;
+    return this.clients.get(clientId);
   }
 
   registerClient(
@@ -71,9 +67,6 @@ export class QuireClientsStore implements OAuthRegisteredClientsStore {
       client_id_issued_at: Math.floor(Date.now() / 1000),
     };
     this.clients.set(client.client_id, client);
-    console.error(
-      `[quire-mcp] registerClient: new client_id=${client.client_id}`
-    );
     return client;
   }
 }

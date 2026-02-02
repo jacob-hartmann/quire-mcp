@@ -283,6 +283,14 @@ function createCallbackServer(
 // HTML Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Generate an HTML page with proper escaping.
+ *
+ * IMPORTANT: The body parameter accepts pre-escaped HTML content.
+ * Callers are responsible for escaping user-provided content using escapeHtml().
+ * This is intentional to allow structured HTML (headers, paragraphs) while
+ * ensuring dynamic content is escaped at the call site.
+ */
 function htmlPage(title: string, body: string): string {
   return `<!doctype html>
 <html>
