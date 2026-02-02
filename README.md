@@ -20,124 +20,139 @@ This server allows AI assistants (like Claude) to interact with your Quire proje
 The server provides **60+ tools** organized by category:
 
 #### Authentication
-| Tool | Description |
-|------|-------------|
+
+| Tool           | Description                                  |
+| -------------- | -------------------------------------------- |
 | `quire.whoami` | Get the current authenticated user's profile |
 
 #### Organizations
-| Tool | Description |
-|------|-------------|
-| `quire.listOrganizations` | List all accessible organizations |
-| `quire.getOrganization` | Get organization details by ID or OID |
-| `quire.updateOrganization` | Update organization followers |
+
+| Tool                       | Description                           |
+| -------------------------- | ------------------------------------- |
+| `quire.listOrganizations`  | List all accessible organizations     |
+| `quire.getOrganization`    | Get organization details by ID or OID |
+| `quire.updateOrganization` | Update organization followers         |
 
 #### Projects
-| Tool | Description |
-|------|-------------|
-| `quire.listProjects` | List all projects, optionally filtered by organization |
-| `quire.getProject` | Get project details including task counts |
-| `quire.updateProject` | Update project name, description, icon, and followers |
-| `quire.exportProject` | Export project tasks in JSON or CSV format |
+
+| Tool                  | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| `quire.listProjects`  | List all projects, optionally filtered by organization |
+| `quire.getProject`    | Get project details including task counts              |
+| `quire.updateProject` | Update project name, description, icon, and followers  |
+| `quire.exportProject` | Export project tasks in JSON or CSV format             |
 
 #### Tasks
-| Tool | Description |
-|------|-------------|
-| `quire.listTasks` | List tasks in a project (root-level or subtasks) |
-| `quire.getTask` | Get task details by project+ID or OID |
-| `quire.createTask` | Create a new task with optional priority, dates, assignees, tags |
-| `quire.updateTask` | Update task properties |
-| `quire.deleteTask` | Delete a task and its subtasks |
-| `quire.searchTasks` | Search tasks in a project by keyword and filters |
-| `quire.createTaskAfter` | Create a task after a specified task |
-| `quire.createTaskBefore` | Create a task before a specified task |
-| `quire.searchFolderTasks` | Search tasks within a folder |
-| `quire.searchOrganizationTasks` | Search tasks across an entire organization |
+
+| Tool                            | Description                                                      |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `quire.listTasks`               | List tasks in a project (root-level or subtasks)                 |
+| `quire.getTask`                 | Get task details by project+ID or OID                            |
+| `quire.createTask`              | Create a new task with optional priority, dates, assignees, tags |
+| `quire.updateTask`              | Update task properties                                           |
+| `quire.deleteTask`              | Delete a task and its subtasks                                   |
+| `quire.searchTasks`             | Search tasks in a project by keyword and filters                 |
+| `quire.createTaskAfter`         | Create a task after a specified task                             |
+| `quire.createTaskBefore`        | Create a task before a specified task                            |
+| `quire.searchFolderTasks`       | Search tasks within a folder                                     |
+| `quire.searchOrganizationTasks` | Search tasks across an entire organization                       |
 
 #### Tags
-| Tool | Description |
-|------|-------------|
-| `quire.listTags` | List all tags in a project |
-| `quire.getTag` | Get tag details by OID |
+
+| Tool              | Description                          |
+| ----------------- | ------------------------------------ |
+| `quire.listTags`  | List all tags in a project           |
+| `quire.getTag`    | Get tag details by OID               |
 | `quire.createTag` | Create a new tag with name and color |
-| `quire.updateTag` | Update tag name or color |
-| `quire.deleteTag` | Delete a tag |
+| `quire.updateTag` | Update tag name or color             |
+| `quire.deleteTag` | Delete a tag                         |
 
 #### Comments
-| Tool | Description |
-|------|-------------|
-| `quire.listTaskComments` | List all comments on a task |
-| `quire.addTaskComment` | Add a comment to a task |
-| `quire.updateComment` | Update comment text |
-| `quire.deleteComment` | Delete a comment |
+
+| Tool                     | Description                         |
+| ------------------------ | ----------------------------------- |
+| `quire.listTaskComments` | List all comments on a task         |
+| `quire.addTaskComment`   | Add a comment to a task             |
+| `quire.updateComment`    | Update comment text                 |
+| `quire.deleteComment`    | Delete a comment                    |
 | `quire.listChatComments` | List all comments in a chat channel |
-| `quire.addChatComment` | Add a comment to a chat channel |
+| `quire.addChatComment`   | Add a comment to a chat channel     |
 
 #### Users
-| Tool | Description |
-|------|-------------|
-| `quire.getUser` | Get user details by ID, OID, or email |
-| `quire.listUsers` | List all accessible users |
-| `quire.listProjectMembers` | List all members of a project |
+
+| Tool                       | Description                           |
+| -------------------------- | ------------------------------------- |
+| `quire.getUser`            | Get user details by ID, OID, or email |
+| `quire.listUsers`          | List all accessible users             |
+| `quire.listProjectMembers` | List all members of a project         |
 
 #### Custom Statuses
-| Tool | Description |
-|------|-------------|
+
+| Tool                 | Description                       |
+| -------------------- | --------------------------------- |
 | `quire.listStatuses` | List custom statuses in a project |
-| `quire.getStatus` | Get status details by value |
-| `quire.createStatus` | Create a custom workflow status |
-| `quire.updateStatus` | Update status name or color |
-| `quire.deleteStatus` | Delete a custom status |
+| `quire.getStatus`    | Get status details by value       |
+| `quire.createStatus` | Create a custom workflow status   |
+| `quire.updateStatus` | Update status name or color       |
+| `quire.deleteStatus` | Delete a custom status            |
 
 #### External Teams (Partners)
-| Tool | Description |
-|------|-------------|
-| `quire.getPartner` | Get external team details |
+
+| Tool                 | Description                          |
+| -------------------- | ------------------------------------ |
+| `quire.getPartner`   | Get external team details            |
 | `quire.listPartners` | List all external teams in a project |
 
 #### Documents
-| Tool | Description |
-|------|-------------|
+
+| Tool                   | Description                                     |
+| ---------------------- | ----------------------------------------------- |
 | `quire.createDocument` | Create a document in an organization or project |
-| `quire.getDocument` | Get document content and metadata |
-| `quire.listDocuments` | List all documents |
-| `quire.updateDocument` | Update document name or content |
-| `quire.deleteDocument` | Delete a document |
+| `quire.getDocument`    | Get document content and metadata               |
+| `quire.listDocuments`  | List all documents                              |
+| `quire.updateDocument` | Update document name or content                 |
+| `quire.deleteDocument` | Delete a document                               |
 
 #### Sublists
-| Tool | Description |
-|------|-------------|
-| `quire.createSublist` | Create a sublist |
-| `quire.getSublist` | Get sublist details |
-| `quire.listSublists` | List all sublists |
+
+| Tool                  | Description                        |
+| --------------------- | ---------------------------------- |
+| `quire.createSublist` | Create a sublist                   |
+| `quire.getSublist`    | Get sublist details                |
+| `quire.listSublists`  | List all sublists                  |
 | `quire.updateSublist` | Update sublist name or description |
-| `quire.deleteSublist` | Delete a sublist |
+| `quire.deleteSublist` | Delete a sublist                   |
 
 #### Chat Channels
-| Tool | Description |
-|------|-------------|
-| `quire.createChat` | Create a chat channel |
-| `quire.getChat` | Get chat channel details |
-| `quire.listChats` | List all chat channels |
+
+| Tool               | Description                               |
+| ------------------ | ----------------------------------------- |
+| `quire.createChat` | Create a chat channel                     |
+| `quire.getChat`    | Get chat channel details                  |
+| `quire.listChats`  | List all chat channels                    |
 | `quire.updateChat` | Update chat name, description, or members |
-| `quire.deleteChat` | Delete a chat channel |
+| `quire.deleteChat` | Delete a chat channel                     |
 
 #### Key-Value Storage
-| Tool | Description |
-|------|-------------|
-| `quire.getStorageValue` | Get a stored value by key |
+
+| Tool                       | Description                    |
+| -------------------------- | ------------------------------ |
+| `quire.getStorageValue`    | Get a stored value by key      |
 | `quire.listStorageEntries` | List storage entries by prefix |
-| `quire.putStorageValue` | Store a value |
-| `quire.deleteStorageValue` | Delete a stored value |
+| `quire.putStorageValue`    | Store a value                  |
+| `quire.deleteStorageValue` | Delete a stored value          |
 
 #### Notifications
-| Tool | Description |
-|------|-------------|
+
+| Tool                     | Description                |
+| ------------------------ | -------------------------- |
 | `quire.sendNotification` | Send notification to users |
 
 #### Attachments
-| Tool | Description |
-|------|-------------|
-| `quire.uploadTaskAttachment` | Upload a file attachment to a task |
+
+| Tool                            | Description                           |
+| ------------------------------- | ------------------------------------- |
+| `quire.uploadTaskAttachment`    | Upload a file attachment to a task    |
 | `quire.uploadCommentAttachment` | Upload a file attachment to a comment |
 
 ### Resources
