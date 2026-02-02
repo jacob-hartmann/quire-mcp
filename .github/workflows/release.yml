@@ -63,7 +63,17 @@ jobs:
           upload-release-assets: false
 
       - name: Publish to npm (with provenance)
-        run: npm publish --provenance
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          case "${PKG_VERSION}" in
+            *-*)
+              # Avoid setting "latest" to a prerelease. Publish under a prerelease dist-tag.
+              npm publish --provenance --ignore-scripts --tag rc
+              ;;
+            *)
+              npm publish --provenance --ignore-scripts
+              ;;
+          esac
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
