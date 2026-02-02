@@ -52,6 +52,7 @@ describe("registerUserMeResource", () => {
       "user-me",
       "quire://user/me",
       expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         description: expect.any(String),
       }),
       expect.any(Function)
@@ -77,11 +78,15 @@ describe("registerUserMeResource", () => {
       };
 
       vi.mocked(getQuireClientOrThrow).mockResolvedValueOnce(
-        mockClient as unknown as ReturnType<typeof getQuireClientOrThrow>
+        mockClient as unknown as Awaited<
+          ReturnType<typeof getQuireClientOrThrow>
+        >
       );
 
       const resource = registeredResources.get("user-me");
       expect(resource).toBeDefined();
+      if (!resource) throw new Error("Resource not found");
+
       const result = (await resource.handler("quire://user/me", {})) as {
         contents: {
           uri: string;
@@ -91,9 +96,11 @@ describe("registerUserMeResource", () => {
       };
 
       expect(result.contents).toHaveLength(1);
-      expect(result.contents[0].uri).toBe("quire://user/me");
-      expect(result.contents[0].mimeType).toBe("application/json");
-      expect(JSON.parse(result.contents[0].text)).toEqual(mockUser);
+      const content = result.contents[0];
+      expect(content).toBeDefined();
+      expect(content?.uri).toBe("quire://user/me");
+      expect(content?.mimeType).toBe("application/json");
+      expect(content && JSON.parse(content.text)).toEqual(mockUser);
     });
 
     it("should throw error on client failure", async () => {
@@ -105,11 +112,14 @@ describe("registerUserMeResource", () => {
       };
 
       vi.mocked(getQuireClientOrThrow).mockResolvedValueOnce(
-        mockClient as unknown as ReturnType<typeof getQuireClientOrThrow>
+        mockClient as unknown as Awaited<
+          ReturnType<typeof getQuireClientOrThrow>
+        >
       );
 
       const resource = registeredResources.get("user-me");
       expect(resource).toBeDefined();
+      if (!resource) throw new Error("Resource not found");
 
       await expect(resource.handler("quire://user/me", {})).rejects.toThrow(
         "Failed to fetch user: UNAUTHORIZED - Invalid token"
@@ -123,6 +133,7 @@ describe("registerUserMeResource", () => {
 
       const resource = registeredResources.get("user-me");
       expect(resource).toBeDefined();
+      if (!resource) throw new Error("Resource not found");
 
       await expect(resource.handler("quire://user/me", {})).rejects.toThrow(
         "Authentication required"

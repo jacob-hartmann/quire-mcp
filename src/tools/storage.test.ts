@@ -43,7 +43,10 @@ describe("Storage Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -71,7 +74,9 @@ describe("Storage Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.getStorageValue")!;
+      const tool = registeredTools.get("quire.getStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra()
@@ -98,7 +103,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getStorageValue")!;
+      const tool = registeredTools.get("quire.getStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra({ quireToken: "token" })
@@ -123,7 +130,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getStorageValue")!;
+      const tool = registeredTools.get("quire.getStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -155,7 +164,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listStorageEntries")!;
+      const tool = registeredTools.get("quire.listStorageEntries");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { prefix: "app:" },
         createMockExtra({ quireToken: "token" })
@@ -183,7 +194,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listStorageEntries")!;
+      const tool = registeredTools.get("quire.listStorageEntries");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { prefix: "nonexistent:" },
         createMockExtra({ quireToken: "token" })
@@ -212,7 +225,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.putStorageValue")!;
+      const tool = registeredTools.get("quire.putStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key", value: "new-value" },
         createMockExtra({ quireToken: "token" })
@@ -241,7 +256,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.putStorageValue")!;
+      const tool = registeredTools.get("quire.putStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { name: "my-key", value: { foo: "bar", count: 42 } },
         createMockExtra({ quireToken: "token" })
@@ -266,7 +283,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.putStorageValue")!;
+      const tool = registeredTools.get("quire.putStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { name: "counter", value: 100 },
         createMockExtra({ quireToken: "token" })
@@ -285,7 +304,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.putStorageValue")!;
+      const tool = registeredTools.get("quire.putStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key", value: "value" },
         createMockExtra({ quireToken: "token" })
@@ -313,7 +334,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteStorageValue")!;
+      const tool = registeredTools.get("quire.deleteStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra({ quireToken: "token" })
@@ -329,7 +352,9 @@ describe("Storage Tools", () => {
 
     it("should handle NOT_FOUND error", async () => {
       const mockClient = createMockClient({
-        deleteStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+        deleteStorageValue: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.notFound()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({
@@ -337,7 +362,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteStorageValue")!;
+      const tool = registeredTools.get("quire.deleteStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -357,7 +384,9 @@ describe("Storage Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.deleteStorageValue")!;
+      const tool = registeredTools.get("quire.deleteStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra()
@@ -374,7 +403,9 @@ describe("Storage Tools", () => {
   describe("error handling for all error codes", () => {
     it("should handle UNAUTHORIZED error for getStorageValue", async () => {
       const mockClient = createMockClient({
-        getStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+        getStorageValue: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.unauthorized()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({
@@ -382,7 +413,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getStorageValue")!;
+      const tool = registeredTools.get("quire.getStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra({ quireToken: "token" })
@@ -406,7 +439,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getStorageValue")!;
+      const tool = registeredTools.get("quire.getStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra({ quireToken: "token" })
@@ -421,7 +456,9 @@ describe("Storage Tools", () => {
 
     it("should handle RATE_LIMITED error for getStorageValue", async () => {
       const mockClient = createMockClient({
-        getStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+        getStorageValue: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.rateLimited()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({
@@ -429,7 +466,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getStorageValue")!;
+      const tool = registeredTools.get("quire.getStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra({ quireToken: "token" })
@@ -445,7 +484,9 @@ describe("Storage Tools", () => {
 
     it("should handle SERVER_ERROR for getStorageValue", async () => {
       const mockClient = createMockClient({
-        getStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.serverError()),
+        getStorageValue: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.serverError()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({
@@ -453,7 +494,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getStorageValue")!;
+      const tool = registeredTools.get("quire.getStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra({ quireToken: "token" })
@@ -473,7 +516,9 @@ describe("Storage Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listStorageEntries")!;
+      const tool = registeredTools.get("quire.listStorageEntries");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { prefix: "app:" },
         createMockExtra()
@@ -488,7 +533,9 @@ describe("Storage Tools", () => {
 
     it("should handle listStorageEntries API error", async () => {
       const mockClient = createMockClient({
-        listStorageEntries: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+        listStorageEntries: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.unauthorized()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({
@@ -496,7 +543,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listStorageEntries")!;
+      const tool = registeredTools.get("quire.listStorageEntries");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { prefix: "app:" },
         createMockExtra({ quireToken: "token" })
@@ -515,7 +564,9 @@ describe("Storage Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.putStorageValue")!;
+      const tool = registeredTools.get("quire.putStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key", value: "test" },
         createMockExtra()
@@ -530,7 +581,9 @@ describe("Storage Tools", () => {
 
     it("should handle UNAUTHORIZED error for deleteStorageValue", async () => {
       const mockClient = createMockClient({
-        deleteStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+        deleteStorageValue: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.unauthorized()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({
@@ -538,7 +591,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteStorageValue")!;
+      const tool = registeredTools.get("quire.deleteStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra({ quireToken: "token" })
@@ -553,7 +608,9 @@ describe("Storage Tools", () => {
 
     it("should handle RATE_LIMITED error for deleteStorageValue", async () => {
       const mockClient = createMockClient({
-        deleteStorageValue: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+        deleteStorageValue: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.rateLimited()),
       });
 
       vi.mocked(getQuireClient).mockResolvedValueOnce({
@@ -561,7 +618,9 @@ describe("Storage Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteStorageValue")!;
+      const tool = registeredTools.get("quire.deleteStorageValue");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "my-key" },
         createMockExtra({ quireToken: "token" })

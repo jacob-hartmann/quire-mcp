@@ -43,7 +43,10 @@ describe("Document Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -72,7 +75,9 @@ describe("Document Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.createDocument")!;
+      const tool = registeredTools.get("quire.createDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project", name: "Doc" },
         createMockExtra()
@@ -99,7 +104,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createDocument")!;
+      const tool = registeredTools.get("quire.createDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         {
           ownerType: "project",
@@ -134,7 +141,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createDocument")!;
+      const tool = registeredTools.get("quire.createDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "organization", ownerId: "my-org", name: "Doc" },
         createMockExtra({ quireToken: "token" })
@@ -163,7 +172,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getDocument")!;
+      const tool = registeredTools.get("quire.getDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "DocOid" },
         createMockExtra({ quireToken: "token" })
@@ -189,7 +200,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getDocument")!;
+      const tool = registeredTools.get("quire.getDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "project", ownerId: "my-project", documentId: "readme" },
         createMockExtra({ quireToken: "token" })
@@ -210,7 +223,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getDocument")!;
+      const tool = registeredTools.get("quire.getDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project" },
         createMockExtra({ quireToken: "token" })
@@ -241,7 +256,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listDocuments")!;
+      const tool = registeredTools.get("quire.listDocuments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -271,7 +288,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listDocuments")!;
+      const tool = registeredTools.get("quire.listDocuments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "organization", ownerId: "my-org" },
         createMockExtra({ quireToken: "token" })
@@ -298,7 +317,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateDocument")!;
+      const tool = registeredTools.get("quire.updateDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { oid: "DocOid", name: "Updated", content: "New content" },
         createMockExtra({ quireToken: "token" })
@@ -323,7 +344,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateDocument")!;
+      const tool = registeredTools.get("quire.updateDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           ownerType: "project",
@@ -350,7 +373,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateDocument")!;
+      const tool = registeredTools.get("quire.updateDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -377,7 +402,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteDocument")!;
+      const tool = registeredTools.get("quire.deleteDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "DocOid" },
         createMockExtra({ quireToken: "token" })
@@ -404,7 +431,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteDocument")!;
+      const tool = registeredTools.get("quire.deleteDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { ownerType: "project", ownerId: "my-project", documentId: "readme" },
         createMockExtra({ quireToken: "token" })
@@ -425,7 +454,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteDocument")!;
+      const tool = registeredTools.get("quire.deleteDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -440,10 +471,15 @@ describe("Document Tools", () => {
 
   describe("authentication failures", () => {
     it("should return auth error for getDocument", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.getDocument")!;
+      const tool = registeredTools.get("quire.getDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "DocOid" },
         createMockExtra()
@@ -454,10 +490,15 @@ describe("Document Tools", () => {
     });
 
     it("should return auth error for listDocuments", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listDocuments")!;
+      const tool = registeredTools.get("quire.listDocuments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra()
@@ -468,10 +509,15 @@ describe("Document Tools", () => {
     });
 
     it("should return auth error for updateDocument", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.updateDocument")!;
+      const tool = registeredTools.get("quire.updateDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "DocOid", name: "Updated" },
         createMockExtra()
@@ -482,10 +528,15 @@ describe("Document Tools", () => {
     });
 
     it("should return auth error for deleteDocument", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.deleteDocument")!;
+      const tool = registeredTools.get("quire.deleteDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "DocOid" },
         createMockExtra()
@@ -507,7 +558,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createDocument")!;
+      const tool = registeredTools.get("quire.createDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project", name: "Doc" },
         createMockExtra({ quireToken: "token" })
@@ -526,7 +579,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getDocument")!;
+      const tool = registeredTools.get("quire.getDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -545,7 +600,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listDocuments")!;
+      const tool = registeredTools.get("quire.listDocuments");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { ownerType: "project", ownerId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -564,7 +621,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateDocument")!;
+      const tool = registeredTools.get("quire.updateDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "DocOid", name: "Updated" },
         createMockExtra({ quireToken: "token" })
@@ -583,7 +642,9 @@ describe("Document Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteDocument")!;
+      const tool = registeredTools.get("quire.deleteDocument");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "DocOid" },
         createMockExtra({ quireToken: "token" })

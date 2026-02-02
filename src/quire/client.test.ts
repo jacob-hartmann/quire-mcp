@@ -275,7 +275,14 @@ describe("QuireClient", () => {
 
       vi.mocked(fetch)
         .mockResolvedValueOnce(mockResponse({ message: "Rate limited" }, 429))
-        .mockResolvedValueOnce(mockResponse({ id: "123", oid: "abc", name: "User", nameText: "User" }));
+        .mockResolvedValueOnce(
+          mockResponse({
+            id: "123",
+            oid: "abc",
+            name: "User",
+            nameText: "User",
+          })
+        );
 
       const client = new QuireClient({ token: "test-token", maxRetries: 3 });
       const resultPromise = client.getMe();
@@ -298,7 +305,14 @@ describe("QuireClient", () => {
         .mockResolvedValueOnce(
           mockResponse({ message: "Service unavailable" }, 503)
         )
-        .mockResolvedValueOnce(mockResponse({ id: "123", oid: "abc", name: "User", nameText: "User" }));
+        .mockResolvedValueOnce(
+          mockResponse({
+            id: "123",
+            oid: "abc",
+            name: "User",
+            nameText: "User",
+          })
+        );
 
       const client = new QuireClient({ token: "test-token", maxRetries: 3 });
       const resultPromise = client.getMe();
@@ -494,7 +508,12 @@ describe("QuireClient", () => {
     describe("listProjects", () => {
       it("should list all projects without organization filter", async () => {
         const mockProjects = [
-          { id: "proj1", oid: "abc123", name: "Project 1", nameText: "Project 1" },
+          {
+            id: "proj1",
+            oid: "abc123",
+            name: "Project 1",
+            nameText: "Project 1",
+          },
         ];
         vi.mocked(fetch).mockResolvedValueOnce(mockResponse(mockProjects));
 
@@ -540,7 +559,12 @@ describe("QuireClient", () => {
     describe("getProject", () => {
       it("should get project by ID", async () => {
         vi.mocked(fetch).mockResolvedValueOnce(
-          mockResponse({ id: "my-project", oid: "abc", name: "My Project", nameText: "My Project" })
+          mockResponse({
+            id: "my-project",
+            oid: "abc",
+            name: "My Project",
+            nameText: "My Project",
+          })
         );
 
         const client = new QuireClient({ token: "test-token" });
@@ -602,7 +626,9 @@ describe("QuireClient", () => {
 
     describe("exportProject", () => {
       it("should export project as JSON by ID", async () => {
-        const mockTasks = [{ oid: "task1", id: 1, name: "Task 1", nameText: "Task 1" }];
+        const mockTasks = [
+          { oid: "task1", id: 1, name: "Task 1", nameText: "Task 1" },
+        ];
         vi.mocked(fetch).mockResolvedValueOnce(mockResponse(mockTasks));
 
         const client = new QuireClient({ token: "test-token" });
@@ -849,10 +875,12 @@ describe("QuireClient", () => {
         );
 
         const client = new QuireClient({ token: "test-token" });
-        await client.createTask("my-project", {
+        const params = {
           name: "New Task",
           description: undefined,
-        });
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+        await client.createTask("my-project", params as any);
 
         expect(fetch).toHaveBeenCalledWith(
           expect.any(String),
@@ -980,7 +1008,8 @@ describe("QuireClient", () => {
         });
 
         const call = vi.mocked(fetch).mock.calls[0];
-        const url = call[0] as string;
+        expect(call).toBeDefined();
+        const url = call?.[0] as string;
         expect(url).toContain("keyword=test");
         expect(url).toContain("status=100");
         expect(url).toContain("priority=1");
@@ -1049,9 +1078,7 @@ describe("QuireClient", () => {
         await client.searchFolderTasks("AbC123", "keyword");
 
         expect(fetch).toHaveBeenCalledWith(
-          expect.stringContaining(
-            "/task/search/folder/AbC123?keyword=keyword"
-          ),
+          expect.stringContaining("/task/search/folder/AbC123?keyword=keyword"),
           expect.any(Object)
         );
       });
@@ -1068,7 +1095,8 @@ describe("QuireClient", () => {
         });
 
         const call = vi.mocked(fetch).mock.calls[0];
-        const url = call[0] as string;
+        expect(call).toBeDefined();
+        const url = call?.[0] as string;
         expect(url).toContain("status=100");
         expect(url).toContain("priority=2");
         expect(url).toContain("assignee=user1");
@@ -1117,7 +1145,8 @@ describe("QuireClient", () => {
         });
 
         const call = vi.mocked(fetch).mock.calls[0];
-        const url = call[0] as string;
+        expect(call).toBeDefined();
+        const url = call?.[0] as string;
         expect(url).toContain("status=0");
         expect(url).toContain("priority=1");
         expect(url).toContain("assignee=user1");
@@ -1188,13 +1217,13 @@ describe("QuireClient", () => {
         );
 
         const client = new QuireClient({ token: "test-token" });
-        await client.createTag("my-project", { name: "Feature", color: 0 });
+        await client.createTag("my-project", { name: "Feature", color: "0" });
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining("/tag/id/my-project"),
           expect.objectContaining({
             method: "POST",
-            body: JSON.stringify({ name: "Feature", color: 0 }),
+            body: JSON.stringify({ name: "Feature", color: "0" }),
           })
         );
       });
@@ -1665,13 +1694,13 @@ describe("QuireClient", () => {
         );
 
         const client = new QuireClient({ token: "test-token" });
-        await client.createStatus("my-project", { name: "Review", value: 200 });
+        await client.createStatus("my-project", { name: "Review" });
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining("/status/id/my-project"),
           expect.objectContaining({
             method: "POST",
-            body: JSON.stringify({ name: "Review", value: 200 }),
+            body: JSON.stringify({ name: "Review" }),
           })
         );
       });
@@ -1682,7 +1711,7 @@ describe("QuireClient", () => {
         );
 
         const client = new QuireClient({ token: "test-token" });
-        await client.createStatus("AbC123", { name: "Review", value: 200 });
+        await client.createStatus("AbC123", { name: "Review" });
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining("/status/AbC123"),
@@ -2624,14 +2653,12 @@ describe("QuireClient", () => {
 
     describe("sendNotification", () => {
       it("should send notification", async () => {
-        vi.mocked(fetch).mockResolvedValueOnce(
-          mockResponse({ success: true })
-        );
+        vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ success: true }));
 
         const client = new QuireClient({ token: "test-token" });
         await client.sendNotification({
           message: "Hello!",
-          userOids: ["user1", "user2"],
+          userIds: ["user1", "user2"],
         });
 
         expect(fetch).toHaveBeenCalledWith(
@@ -2640,30 +2667,30 @@ describe("QuireClient", () => {
             method: "POST",
             body: JSON.stringify({
               message: "Hello!",
-              userOids: ["user1", "user2"],
+              userIds: ["user1", "user2"],
             }),
           })
         );
       });
 
       it("should filter undefined values from params", async () => {
-        vi.mocked(fetch).mockResolvedValueOnce(
-          mockResponse({ success: true })
-        );
+        vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ success: true }));
 
         const client = new QuireClient({ token: "test-token" });
-        await client.sendNotification({
+        const params = {
           message: "Hello!",
-          userOids: ["user1"],
+          userIds: ["user1"],
           url: undefined,
-        });
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+        await client.sendNotification(params as any);
 
         expect(fetch).toHaveBeenCalledWith(
           expect.any(String),
           expect.objectContaining({
             body: JSON.stringify({
               message: "Hello!",
-              userOids: ["user1"],
+              userIds: ["user1"],
             }),
           })
         );
@@ -3038,9 +3065,8 @@ describe("createClientFromAuth", () => {
       },
     }));
 
-    const { createClientFromAuth: createClientFromAuthMocked } = await import(
-      "./client.js"
-    );
+    const { createClientFromAuth: createClientFromAuthMocked } =
+      await import("./client.js");
     const result = await createClientFromAuthMocked();
 
     expect(result.success).toBe(true);
@@ -3067,9 +3093,8 @@ describe("createClientFromAuth", () => {
       QuireAuthError,
     }));
 
-    const { createClientFromAuth: createClientFromAuthMocked } = await import(
-      "./client.js"
-    );
+    const { createClientFromAuth: createClientFromAuthMocked } =
+      await import("./client.js");
     const result = await createClientFromAuthMocked();
 
     expect(result.success).toBe(false);
@@ -3092,9 +3117,8 @@ describe("createClientFromAuth", () => {
       },
     }));
 
-    const { createClientFromAuth: createClientFromAuthMocked } = await import(
-      "./client.js"
-    );
+    const { createClientFromAuth: createClientFromAuthMocked } =
+      await import("./client.js");
     const result = await createClientFromAuthMocked();
 
     expect(result.success).toBe(false);
@@ -3115,9 +3139,8 @@ describe("createClientFromAuth", () => {
       },
     }));
 
-    const { createClientFromAuth: createClientFromAuthMocked } = await import(
-      "./client.js"
-    );
+    const { createClientFromAuth: createClientFromAuthMocked } =
+      await import("./client.js");
     const result = await createClientFromAuthMocked();
 
     expect(result.success).toBe(false);

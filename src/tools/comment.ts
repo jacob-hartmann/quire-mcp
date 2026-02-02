@@ -107,7 +107,9 @@ export function registerCommentTools(server: McpServer): void {
       // Add comment by taskOid or by projectId + taskId
       let result;
       if (taskOid) {
-        result = await clientResult.client.addTaskComment(taskOid, { description });
+        result = await clientResult.client.addTaskComment(taskOid, {
+          description,
+        });
       } else if (projectId && taskId !== undefined) {
         result = await clientResult.client.addTaskComment(projectId, taskId, {
           description,
@@ -263,7 +265,9 @@ export function registerCommentTools(server: McpServer): void {
       // Add comment by chatOid or by projectId + chatId
       let result;
       if (chatOid) {
-        result = await clientResult.client.addChatComment(chatOid, { description });
+        result = await clientResult.client.addChatComment(chatOid, {
+          description,
+        });
       } else if (projectId && chatId) {
         result = await clientResult.client.addChatComment(projectId, chatId, {
           description,

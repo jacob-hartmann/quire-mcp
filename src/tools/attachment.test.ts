@@ -43,7 +43,10 @@ describe("Attachment Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -56,7 +59,8 @@ describe("Attachment Tools", () => {
   });
 
   it("should register all attachment tools", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(2);
+    const registerToolFn = server.registerTool.bind(server);
+    expect(registerToolFn).toHaveBeenCalledTimes(2);
     expect(registeredTools.has("quire.uploadTaskAttachment")).toBe(true);
     expect(registeredTools.has("quire.uploadCommentAttachment")).toBe(true);
   });
@@ -69,8 +73,12 @@ describe("Attachment Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.uploadTaskAttachment")!;
-      const result = (await tool.handler(
+      const tool = registeredTools.get("quire.uploadTaskAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
         { taskOid: "TaskOid", filename: "file.txt", content: "Hello" },
         createMockExtra()
       )) as {
@@ -100,8 +108,12 @@ describe("Attachment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.uploadTaskAttachment")!;
-      const result = (await tool.handler(
+      const tool = registeredTools.get("quire.uploadTaskAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
         { taskOid: "TaskOid", filename: "file.txt", content: "Hello" },
         createMockExtra({ quireToken: "token" })
       )) as {
@@ -111,7 +123,8 @@ describe("Attachment Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("file.txt");
-      expect(mockClient.uploadTaskAttachment).toHaveBeenCalledWith(
+      const uploadFn = mockClient.uploadTaskAttachment.bind(mockClient);
+      expect(uploadFn).toHaveBeenCalledWith(
         "TaskOid",
         "file.txt",
         "Hello",
@@ -132,8 +145,12 @@ describe("Attachment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.uploadTaskAttachment")!;
-      await tool.handler(
+      const tool = registeredTools.get("quire.uploadTaskAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      await handlerFn(
         {
           taskOid: "TaskOid",
           filename: "data.json",
@@ -143,7 +160,8 @@ describe("Attachment Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.uploadTaskAttachment).toHaveBeenCalledWith(
+      const uploadFn = mockClient.uploadTaskAttachment.bind(mockClient);
+      expect(uploadFn).toHaveBeenCalledWith(
         "TaskOid",
         "data.json",
         '{"key":"value"}',
@@ -163,8 +181,12 @@ describe("Attachment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.uploadTaskAttachment")!;
-      const result = (await tool.handler(
+      const tool = registeredTools.get("quire.uploadTaskAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
         { taskOid: "nonexistent", filename: "file.txt", content: "Hello" },
         createMockExtra({ quireToken: "token" })
       )) as {
@@ -188,8 +210,12 @@ describe("Attachment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.uploadTaskAttachment")!;
-      const result = (await tool.handler(
+      const tool = registeredTools.get("quire.uploadTaskAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
         { taskOid: "TaskOid", filename: "file.txt", content: "Hello" },
         createMockExtra({ quireToken: "token" })
       )) as {
@@ -210,8 +236,12 @@ describe("Attachment Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.uploadCommentAttachment")!;
-      const result = (await tool.handler(
+      const tool = registeredTools.get("quire.uploadCommentAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
         { commentOid: "CommentOid", filename: "image.png", content: "data" },
         createMockExtra()
       )) as {
@@ -241,8 +271,12 @@ describe("Attachment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.uploadCommentAttachment")!;
-      const result = (await tool.handler(
+      const tool = registeredTools.get("quire.uploadCommentAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
         { commentOid: "CommentOid", filename: "image.png", content: "binary" },
         createMockExtra({ quireToken: "token" })
       )) as {
@@ -252,7 +286,8 @@ describe("Attachment Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("image.png");
-      expect(mockClient.uploadCommentAttachment).toHaveBeenCalledWith(
+      const uploadFn = mockClient.uploadCommentAttachment.bind(mockClient);
+      expect(uploadFn).toHaveBeenCalledWith(
         "CommentOid",
         "image.png",
         "binary",
@@ -273,8 +308,12 @@ describe("Attachment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.uploadCommentAttachment")!;
-      await tool.handler(
+      const tool = registeredTools.get("quire.uploadCommentAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      await handlerFn(
         {
           commentOid: "CommentOid",
           filename: "image.png",
@@ -284,7 +323,8 @@ describe("Attachment Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.uploadCommentAttachment).toHaveBeenCalledWith(
+      const uploadFn = mockClient.uploadCommentAttachment.bind(mockClient);
+      expect(uploadFn).toHaveBeenCalledWith(
         "CommentOid",
         "image.png",
         "binary",
@@ -304,8 +344,12 @@ describe("Attachment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.uploadCommentAttachment")!;
-      const result = (await tool.handler(
+      const tool = registeredTools.get("quire.uploadCommentAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
         { commentOid: "nonexistent", filename: "file.txt", content: "Hello" },
         createMockExtra({ quireToken: "token" })
       )) as {
@@ -329,8 +373,12 @@ describe("Attachment Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.uploadCommentAttachment")!;
-      const result = (await tool.handler(
+      const tool = registeredTools.get("quire.uploadCommentAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
         { commentOid: "CommentOid", filename: "file.txt", content: "Hello" },
         createMockExtra({ quireToken: "token" })
       )) as {

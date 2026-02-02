@@ -20,6 +20,9 @@ export type MockExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
 export function createMockExtra(options?: { quireToken?: string }): MockExtra {
   const extra: MockExtra = {
     signal: new AbortController().signal,
+    requestId: "test-request-id",
+    sendNotification: () => Promise.resolve(),
+    sendRequest: () => Promise.resolve({} as never),
   };
 
   if (options?.quireToken !== undefined) {
@@ -44,435 +47,542 @@ export function createMockClient(
 ): QuireClient {
   const defaultClient: Partial<QuireClient> = {
     // User methods
-    getMe: async () => ({
-      success: true,
-      data: {
-        oid: "user-oid",
-        id: "test-user",
-        name: "Test User",
-        nameText: "Test User",
-        email: "test@example.com",
-        url: "https://quire.io/u/test-user",
-      },
-    }),
-    getUser: async () => ({
-      success: true,
-      data: {
-        oid: "user-oid",
-        id: "test-user",
-        name: "Test User",
-        nameText: "Test User",
-        email: "test@example.com",
-        url: "https://quire.io/u/test-user",
-      },
-    }),
-    listUsers: async () => ({
-      success: true,
-      data: [],
-    }),
-    listProjectMembers: async () => ({
-      success: true,
-      data: [],
-    }),
+    getMe: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "user-oid",
+          id: "test-user",
+          name: "Test User",
+          nameText: "Test User",
+          email: "test@example.com",
+          url: "https://quire.io/u/test-user",
+        },
+      }),
+    getUser: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "user-oid",
+          id: "test-user",
+          name: "Test User",
+          nameText: "Test User",
+          email: "test@example.com",
+          url: "https://quire.io/u/test-user",
+        },
+      }),
+    listUsers: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    listProjectMembers: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
 
     // Organization methods
-    listOrganizations: async () => ({
-      success: true,
-      data: [],
-    }),
-    getOrganization: async () => ({
-      success: true,
-      data: {
-        oid: "org-oid",
-        id: "test-org",
-        name: "Test Org",
-        nameText: "Test Org",
-        url: "https://quire.io/o/test-org",
-      },
-    }),
-    updateOrganization: async () => ({
-      success: true,
-      data: {
-        oid: "org-oid",
-        id: "test-org",
-        name: "Test Org",
-        nameText: "Test Org",
-        url: "https://quire.io/o/test-org",
-      },
-    }),
+    listOrganizations: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    getOrganization: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "org-oid",
+          id: "test-org",
+          name: "Test Org",
+          nameText: "Test Org",
+          url: "https://quire.io/o/test-org",
+        },
+      }),
+    updateOrganization: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "org-oid",
+          id: "test-org",
+          name: "Test Org",
+          nameText: "Test Org",
+          url: "https://quire.io/o/test-org",
+        },
+      }),
 
     // Project methods
-    listProjects: async () => ({
-      success: true,
-      data: [],
-    }),
-    getProject: async () => ({
-      success: true,
-      data: {
-        oid: "project-oid",
-        id: "test-project",
-        name: "Test Project",
-        nameText: "Test Project",
-        url: "https://quire.io/w/test-project",
-      },
-    }),
-    updateProject: async () => ({
-      success: true,
-      data: {
-        oid: "project-oid",
-        id: "test-project",
-        name: "Test Project",
-        nameText: "Test Project",
-        url: "https://quire.io/w/test-project",
-      },
-    }),
-    exportProject: async () => ({
-      success: true,
-      data: [],
-    }),
+    listProjects: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    getProject: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "project-oid",
+          id: "test-project",
+          name: "Test Project",
+          nameText: "Test Project",
+          url: "https://quire.io/w/test-project",
+        },
+      }),
+    updateProject: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "project-oid",
+          id: "test-project",
+          name: "Test Project",
+          nameText: "Test Project",
+          url: "https://quire.io/w/test-project",
+        },
+      }),
+    exportProject: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
 
     // Task methods
-    listTasks: async () => ({
-      success: true,
-      data: [],
-    }),
-    getTask: async () => ({
-      success: true,
-      data: {
-        oid: "task-oid",
-        id: 1,
-        name: "Test Task",
-        nameText: "Test Task",
-        url: "https://quire.io/w/test-project?t=1",
-      },
-    }),
-    createTask: async () => ({
-      success: true,
-      data: {
-        oid: "new-task-oid",
-        id: 2,
-        name: "New Task",
-        nameText: "New Task",
-        url: "https://quire.io/w/test-project?t=2",
-      },
-    }),
-    updateTask: async () => ({
-      success: true,
-      data: {
-        oid: "task-oid",
-        id: 1,
-        name: "Updated Task",
-        nameText: "Updated Task",
-        url: "https://quire.io/w/test-project?t=1",
-      },
-    }),
-    deleteTask: async () => ({
-      success: true,
-      data: { oid: "task-oid" },
-    }),
-    searchTasks: async () => ({
-      success: true,
-      data: [],
-    }),
-    createTaskAfter: async () => ({
-      success: true,
-      data: {
-        oid: "after-task-oid",
-        id: 3,
-        name: "After Task",
-        nameText: "After Task",
-        url: "https://quire.io/w/test-project?t=3",
-      },
-    }),
-    createTaskBefore: async () => ({
-      success: true,
-      data: {
-        oid: "before-task-oid",
-        id: 0,
-        name: "Before Task",
-        nameText: "Before Task",
-        url: "https://quire.io/w/test-project?t=0",
-      },
-    }),
-    searchFolderTasks: async () => ({
-      success: true,
-      data: [],
-    }),
-    searchOrganizationTasks: async () => ({
-      success: true,
-      data: [],
-    }),
+    listTasks: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    getTask: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "task-oid",
+          id: 1,
+          name: "Test Task",
+          nameText: "Test Task",
+          url: "https://quire.io/w/test-project?t=1",
+        },
+      }),
+    createTask: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "new-task-oid",
+          id: 2,
+          name: "New Task",
+          nameText: "New Task",
+          url: "https://quire.io/w/test-project?t=2",
+        },
+      }),
+    updateTask: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "task-oid",
+          id: 1,
+          name: "Updated Task",
+          nameText: "Updated Task",
+          url: "https://quire.io/w/test-project?t=1",
+        },
+      }),
+    deleteTask: () =>
+      Promise.resolve({
+        success: true,
+        data: { oid: "task-oid" },
+      }),
+    searchTasks: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    createTaskAfter: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "after-task-oid",
+          id: 3,
+          name: "After Task",
+          nameText: "After Task",
+          url: "https://quire.io/w/test-project?t=3",
+        },
+      }),
+    createTaskBefore: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "before-task-oid",
+          id: 0,
+          name: "Before Task",
+          nameText: "Before Task",
+          url: "https://quire.io/w/test-project?t=0",
+        },
+      }),
+    searchFolderTasks: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    searchOrganizationTasks: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
 
     // Tag methods
-    listTags: async () => ({
-      success: true,
-      data: [],
-    }),
-    getTag: async () => ({
-      success: true,
-      data: {
-        oid: "tag-oid",
-        id: 1,
-        name: "Test Tag",
-      },
-    }),
-    createTag: async () => ({
-      success: true,
-      data: {
-        oid: "new-tag-oid",
-        id: 2,
-        name: "New Tag",
-      },
-    }),
-    updateTag: async () => ({
-      success: true,
-      data: {
-        oid: "tag-oid",
-        id: 1,
-        name: "Updated Tag",
-      },
-    }),
-    deleteTag: async () => ({
-      success: true,
-      data: { oid: "tag-oid" },
-    }),
+    listTags: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    getTag: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "tag-oid",
+          id: 1,
+          name: "Test Tag",
+          nameText: "Test Tag",
+        },
+      }),
+    createTag: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "new-tag-oid",
+          id: 2,
+          name: "New Tag",
+          nameText: "New Tag",
+        },
+      }),
+    updateTag: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "tag-oid",
+          id: 1,
+          name: "Updated Tag",
+          nameText: "Updated Tag",
+        },
+      }),
+    deleteTag: () =>
+      Promise.resolve({
+        success: true,
+        data: { oid: "tag-oid" },
+      }),
 
     // Comment methods
-    listTaskComments: async () => ({
-      success: true,
-      data: [],
-    }),
-    addTaskComment: async () => ({
-      success: true,
-      data: {
-        oid: "comment-oid",
-        description: "Test comment",
-      },
-    }),
-    updateComment: async () => ({
-      success: true,
-      data: {
-        oid: "comment-oid",
-        description: "Updated comment",
-      },
-    }),
-    deleteComment: async () => ({
-      success: true,
-      data: { oid: "comment-oid" },
-    }),
-    listChatComments: async () => ({
-      success: true,
-      data: [],
-    }),
-    addChatComment: async () => ({
-      success: true,
-      data: {
-        oid: "chat-comment-oid",
-        description: "Chat comment",
-      },
-    }),
+    listTaskComments: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    addTaskComment: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "comment-oid",
+          description: "Test comment",
+          descriptionText: "Test comment",
+          createdAt: "2024-01-01T00:00:00Z",
+          createdBy: {
+            id: "test-user",
+            name: "Test User",
+            nameText: "Test User",
+          },
+        },
+      }),
+    updateComment: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "comment-oid",
+          description: "Updated comment",
+          descriptionText: "Updated comment",
+          createdAt: "2024-01-01T00:00:00Z",
+          createdBy: {
+            id: "test-user",
+            name: "Test User",
+            nameText: "Test User",
+          },
+        },
+      }),
+    deleteComment: () =>
+      Promise.resolve({
+        success: true,
+        data: { oid: "comment-oid" },
+      }),
+    listChatComments: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    addChatComment: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "chat-comment-oid",
+          description: "Chat comment",
+          descriptionText: "Chat comment",
+          createdAt: "2024-01-01T00:00:00Z",
+          createdBy: {
+            id: "test-user",
+            name: "Test User",
+            nameText: "Test User",
+          },
+        },
+      }),
 
     // Status methods
-    listStatuses: async () => ({
-      success: true,
-      data: [],
-    }),
-    getStatus: async () => ({
-      success: true,
-      data: {
-        value: 100,
-        name: "Active",
-      },
-    }),
-    createStatus: async () => ({
-      success: true,
-      data: {
-        value: 200,
-        name: "New Status",
-      },
-    }),
-    updateStatus: async () => ({
-      success: true,
-      data: {
-        value: 100,
-        name: "Updated Status",
-      },
-    }),
-    deleteStatus: async () => ({
-      success: true,
-      data: { value: 100 },
-    }),
+    listStatuses: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    getStatus: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          value: 100,
+          name: "Active",
+          nameText: "Active",
+        },
+      }),
+    createStatus: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          value: 200,
+          name: "New Status",
+          nameText: "New Status",
+        },
+      }),
+    updateStatus: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          value: 100,
+          name: "Updated Status",
+          nameText: "Updated Status",
+        },
+      }),
+    deleteStatus: () =>
+      Promise.resolve({
+        success: true,
+        data: { value: 100 },
+      }),
 
     // Partner methods
-    getPartner: async () => ({
-      success: true,
-      data: {
-        oid: "partner-oid",
-        name: "Test Partner",
-        nameText: "Test Partner",
-      },
-    }),
-    listPartners: async () => ({
-      success: true,
-      data: [],
-    }),
+    getPartner: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "partner-oid",
+          id: "test-partner",
+          name: "Test Partner",
+          nameText: "Test Partner",
+        },
+      }),
+    listPartners: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
 
     // Document methods
-    createDocument: async () => ({
-      success: true,
-      data: {
-        oid: "doc-oid",
-        id: "test-doc",
-        name: "Test Doc",
-        nameText: "Test Doc",
-      },
-    }),
-    getDocument: async () => ({
-      success: true,
-      data: {
-        oid: "doc-oid",
-        id: "test-doc",
-        name: "Test Doc",
-        nameText: "Test Doc",
-      },
-    }),
-    listDocuments: async () => ({
-      success: true,
-      data: [],
-    }),
-    updateDocument: async () => ({
-      success: true,
-      data: {
-        oid: "doc-oid",
-        id: "test-doc",
-        name: "Updated Doc",
-        nameText: "Updated Doc",
-      },
-    }),
-    deleteDocument: async () => ({
-      success: true,
-      data: { oid: "doc-oid" },
-    }),
+    createDocument: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "doc-oid",
+          id: "test-doc",
+          name: "Test Doc",
+          nameText: "Test Doc",
+        },
+      }),
+    getDocument: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "doc-oid",
+          id: "test-doc",
+          name: "Test Doc",
+          nameText: "Test Doc",
+        },
+      }),
+    listDocuments: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    updateDocument: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "doc-oid",
+          id: "test-doc",
+          name: "Updated Doc",
+          nameText: "Updated Doc",
+        },
+      }),
+    deleteDocument: () =>
+      Promise.resolve({
+        success: true,
+        data: { oid: "doc-oid" },
+      }),
 
     // Sublist methods
-    createSublist: async () => ({
-      success: true,
-      data: {
-        oid: "sublist-oid",
-        id: "test-sublist",
-        name: "Test Sublist",
-        nameText: "Test Sublist",
-      },
-    }),
-    getSublist: async () => ({
-      success: true,
-      data: {
-        oid: "sublist-oid",
-        id: "test-sublist",
-        name: "Test Sublist",
-        nameText: "Test Sublist",
-      },
-    }),
-    listSublists: async () => ({
-      success: true,
-      data: [],
-    }),
-    updateSublist: async () => ({
-      success: true,
-      data: {
-        oid: "sublist-oid",
-        id: "test-sublist",
-        name: "Updated Sublist",
-        nameText: "Updated Sublist",
-      },
-    }),
-    deleteSublist: async () => ({
-      success: true,
-      data: { oid: "sublist-oid" },
-    }),
+    createSublist: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "sublist-oid",
+          id: "test-sublist",
+          name: "Test Sublist",
+          nameText: "Test Sublist",
+        },
+      }),
+    getSublist: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "sublist-oid",
+          id: "test-sublist",
+          name: "Test Sublist",
+          nameText: "Test Sublist",
+        },
+      }),
+    listSublists: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    updateSublist: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "sublist-oid",
+          id: "test-sublist",
+          name: "Updated Sublist",
+          nameText: "Updated Sublist",
+        },
+      }),
+    deleteSublist: () =>
+      Promise.resolve({
+        success: true,
+        data: { oid: "sublist-oid" },
+      }),
 
     // Chat methods
-    createChat: async () => ({
-      success: true,
-      data: {
-        oid: "chat-oid",
-        id: "test-chat",
-        name: "Test Chat",
-        nameText: "Test Chat",
-      },
-    }),
-    getChat: async () => ({
-      success: true,
-      data: {
-        oid: "chat-oid",
-        id: "test-chat",
-        name: "Test Chat",
-        nameText: "Test Chat",
-      },
-    }),
-    listChats: async () => ({
-      success: true,
-      data: [],
-    }),
-    updateChat: async () => ({
-      success: true,
-      data: {
-        oid: "chat-oid",
-        id: "test-chat",
-        name: "Updated Chat",
-        nameText: "Updated Chat",
-      },
-    }),
-    deleteChat: async () => ({
-      success: true,
-      data: { oid: "chat-oid" },
-    }),
+    createChat: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "chat-oid",
+          id: "test-chat",
+          name: "Test Chat",
+          nameText: "Test Chat",
+        },
+      }),
+    getChat: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "chat-oid",
+          id: "test-chat",
+          name: "Test Chat",
+          nameText: "Test Chat",
+        },
+      }),
+    listChats: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    updateChat: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "chat-oid",
+          id: "test-chat",
+          name: "Updated Chat",
+          nameText: "Updated Chat",
+        },
+      }),
+    deleteChat: () =>
+      Promise.resolve({
+        success: true,
+        data: { oid: "chat-oid" },
+      }),
 
     // Storage methods
-    getStorageValue: async () => ({
-      success: true,
-      data: {
-        name: "test-key",
-        value: "test-value",
-      },
-    }),
-    listStorageEntries: async () => ({
-      success: true,
-      data: [],
-    }),
-    putStorageValue: async () => ({
-      success: true,
-      data: {
-        name: "test-key",
-        value: "new-value",
-      },
-    }),
-    deleteStorageValue: async () => ({
-      success: true,
-      data: { name: "test-key" },
-    }),
+    getStorageValue: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          name: "test-key",
+          value: "test-value",
+        },
+      }),
+    listStorageEntries: () =>
+      Promise.resolve({
+        success: true,
+        data: [],
+      }),
+    putStorageValue: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          name: "test-key",
+          value: "new-value",
+        },
+      }),
+    deleteStorageValue: () =>
+      Promise.resolve({
+        success: true,
+        data: { name: "test-key" },
+      }),
 
     // Notification methods
-    sendNotification: async () => ({
-      success: true,
-      data: { success: true },
-    }),
+    sendNotification: () =>
+      Promise.resolve({
+        success: true,
+        data: { success: true },
+      }),
 
     // Attachment methods
-    uploadTaskAttachment: async () => ({
-      success: true,
-      data: {
-        oid: "attachment-oid",
-        name: "test-file.txt",
-      },
-    }),
-    uploadCommentAttachment: async () => ({
-      success: true,
-      data: {
-        oid: "attachment-oid",
-        name: "test-file.txt",
-      },
-    }),
+    uploadTaskAttachment: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "attachment-oid",
+          name: "test-file.txt",
+          url: "https://quire.io/attachments/test-file.txt",
+          size: 1024,
+          mimeType: "text/plain",
+          createdAt: "2024-01-01T00:00:00Z",
+          createdBy: {
+            id: "test-user",
+            name: "Test User",
+            nameText: "Test User",
+          },
+        },
+      }),
+    uploadCommentAttachment: () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          oid: "attachment-oid",
+          name: "test-file.txt",
+          url: "https://quire.io/attachments/test-file.txt",
+          size: 1024,
+          mimeType: "text/plain",
+          createdAt: "2024-01-01T00:00:00Z",
+          createdBy: {
+            id: "test-user",
+            name: "Test User",
+            nameText: "Test User",
+          },
+        },
+      }),
   };
 
   return { ...defaultClient, ...overrides } as QuireClient;
@@ -489,12 +599,7 @@ export const mockErrors = {
 
   forbidden: () => ({
     success: false as const,
-    error: new QuireClientError(
-      "Permission denied",
-      "FORBIDDEN",
-      403,
-      false
-    ),
+    error: new QuireClientError("Permission denied", "FORBIDDEN", 403, false),
   }),
 
   notFound: () => ({

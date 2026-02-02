@@ -8,7 +8,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 
 import {
   describe,
@@ -71,8 +70,14 @@ vi.mock(
           return;
         }
         // Simulate auth info
-        (req as express.Request & { auth?: { token: string } }).auth = {
+        (
+          req as express.Request & {
+            auth?: { token: string; clientId: string; scopes: string[] };
+          }
+        ).auth = {
           token: auth.replace("Bearer ", ""),
+          clientId: "test-client",
+          scopes: ["read", "write"],
         };
         next();
       };
@@ -82,7 +87,7 @@ vi.mock(
 
 const mockTransport = {
   sessionId: undefined as string | undefined,
-  handleRequest: vi.fn().mockImplementation((req, res) => {
+  handleRequest: vi.fn().mockImplementation((_req, res) => {
     res.json({ jsonrpc: "2.0", result: {}, id: 1 });
   }),
   close: vi.fn().mockResolvedValue(undefined),
@@ -241,11 +246,14 @@ function createTestApp(): Express {
       return;
     }
 
-    const result = await (
-      handleQuireOAuthCallback as ReturnType<typeof vi.fn>
-    )();
+    const result = await vi.mocked(handleQuireOAuthCallback)(
+      {} as never,
+      {} as never,
+      code,
+      state
+    );
 
-    if (result && "error" in result) {
+    if ("error" in result) {
       res.status(400).send(`
         <!DOCTYPE html>
         <html>
@@ -260,7 +268,7 @@ function createTestApp(): Express {
       return;
     }
 
-    res.redirect(result?.redirectUrl ?? "/");
+    res.redirect(result.redirectUrl);
   });
 
   // Session storage
@@ -298,7 +306,11 @@ function createTestApp(): Express {
       if (session) {
         session.lastActivity = Date.now();
       }
-      res.json({ jsonrpc: "2.0", result: { existing: true }, id: req.body?.id });
+      res.json({
+        jsonrpc: "2.0",
+        result: { existing: true },
+        id: req.body?.id,
+      });
       return;
     }
 
@@ -414,7 +426,7 @@ describe("HTTP Server Integration Tests", () => {
         .query({ code: "auth-code", state: "state-123" });
 
       expect(response.status).toBe(302);
-      expect(response.headers.location).toBe(
+      expect(response.headers["location"]).toBe(
         "http://client.example.com/callback?code=abc123"
       );
     });
@@ -514,6 +526,8 @@ describe("HTTP Server Integration Tests", () => {
         .send({ jsonrpc: "2.0", method: "initialize", id: 1 });
 
       const sessionId = initResponse.headers["mcp-session-id"];
+      expect(sessionId).toBeDefined();
+      if (!sessionId) throw new Error("Session ID should be set");
 
       // Then make a request with the session ID
       const response = await request(app)
@@ -540,7 +554,9 @@ describe("HTTP Server Integration Tests", () => {
         .set("Authorization", "Bearer test-token");
 
       expect(response.status).toBe(400);
-      expect(response.body.error.message).toContain("Invalid or missing session ID");
+      expect(response.body.error.message).toContain(
+        "Invalid or missing session ID"
+      );
     });
 
     it("should reject requests with invalid session ID", async () => {
@@ -560,6 +576,8 @@ describe("HTTP Server Integration Tests", () => {
         .send({ jsonrpc: "2.0", method: "initialize", id: 1 });
 
       const sessionId = initResponse.headers["mcp-session-id"];
+      expect(sessionId).toBeDefined();
+      if (!sessionId) throw new Error("Session ID should be set");
 
       // Then make SSE request
       const response = await request(app)
@@ -595,6 +613,8 @@ describe("HTTP Server Integration Tests", () => {
         .send({ jsonrpc: "2.0", method: "initialize", id: 1 });
 
       const sessionId = initResponse.headers["mcp-session-id"];
+      expect(sessionId).toBeDefined();
+      if (!sessionId) throw new Error("Session ID should be set");
 
       // Delete the session
       const deleteResponse = await request(app)
@@ -639,7 +659,9 @@ describe("HTTP Server Integration Tests", () => {
 
       expect(response.status).toBe(204);
       expect(response.headers["access-control-allow-methods"]).toContain("GET");
-      expect(response.headers["access-control-allow-methods"]).toContain("POST");
+      expect(response.headers["access-control-allow-methods"]).toContain(
+        "POST"
+      );
     });
 
     it("should block cross-origin requests to MCP endpoint", async () => {

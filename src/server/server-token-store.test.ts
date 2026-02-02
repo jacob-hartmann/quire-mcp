@@ -429,6 +429,10 @@ describe("verifyPkceChallenge", () => {
       const verifier = "test-verifier-1234";
 
       // First compute the expected challenge
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+      /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+      /* eslint-disable @typescript-eslint/no-unsafe-call */
       const crypto = require("node:crypto");
       const hash = crypto.createHash("sha256").update(verifier).digest();
       const expectedChallenge = hash
@@ -436,7 +440,12 @@ describe("verifyPkceChallenge", () => {
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
         .replace(/=+$/, "");
+      /* eslint-enable @typescript-eslint/no-unsafe-call */
+      /* eslint-enable @typescript-eslint/no-unsafe-member-access */
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+      /* eslint-enable @typescript-eslint/no-require-imports */
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = verifyPkceChallenge(verifier, expectedChallenge, "S256");
 
       expect(result).toBe(true);

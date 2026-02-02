@@ -43,7 +43,10 @@ describe("Status Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -72,7 +75,9 @@ describe("Status Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listStatuses")!;
+      const tool = registeredTools.get("quire.listStatuses");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra()
@@ -103,7 +108,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listStatuses")!;
+      const tool = registeredTools.get("quire.listStatuses");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -134,7 +141,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getStatus")!;
+      const tool = registeredTools.get("quire.getStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 50 },
         createMockExtra({ quireToken: "token" })
@@ -158,7 +167,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getStatus")!;
+      const tool = registeredTools.get("quire.getStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 999 },
         createMockExtra({ quireToken: "token" })
@@ -187,7 +198,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createStatus")!;
+      const tool = registeredTools.get("quire.createStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", name: "Review" },
         createMockExtra({ quireToken: "token" })
@@ -215,7 +228,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createStatus")!;
+      const tool = registeredTools.get("quire.createStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { projectId: "my-project", name: "Review", color: "ff5733" },
         createMockExtra({ quireToken: "token" })
@@ -237,7 +252,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createStatus")!;
+      const tool = registeredTools.get("quire.createStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", name: "Status" },
         createMockExtra({ quireToken: "token" })
@@ -265,7 +282,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateStatus")!;
+      const tool = registeredTools.get("quire.updateStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 50, name: "Working", color: 2 },
         createMockExtra({ quireToken: "token" })
@@ -296,7 +315,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteStatus")!;
+      const tool = registeredTools.get("quire.deleteStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 50 },
         createMockExtra({ quireToken: "token" })
@@ -320,7 +341,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteStatus")!;
+      const tool = registeredTools.get("quire.deleteStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 999 },
         createMockExtra({ quireToken: "token" })
@@ -335,10 +358,15 @@ describe("Status Tools", () => {
 
   describe("authentication failures", () => {
     it("should return auth error for getStatus", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.getStatus")!;
+      const tool = registeredTools.get("quire.getStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 50 },
         createMockExtra()
@@ -349,10 +377,15 @@ describe("Status Tools", () => {
     });
 
     it("should return auth error for createStatus", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.createStatus")!;
+      const tool = registeredTools.get("quire.createStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", name: "Status" },
         createMockExtra()
@@ -363,10 +396,15 @@ describe("Status Tools", () => {
     });
 
     it("should return auth error for updateStatus", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.updateStatus")!;
+      const tool = registeredTools.get("quire.updateStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 50, name: "Updated" },
         createMockExtra()
@@ -377,10 +415,15 @@ describe("Status Tools", () => {
     });
 
     it("should return auth error for deleteStatus", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.deleteStatus")!;
+      const tool = registeredTools.get("quire.deleteStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 50 },
         createMockExtra()
@@ -402,7 +445,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listStatuses")!;
+      const tool = registeredTools.get("quire.listStatuses");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -421,7 +466,9 @@ describe("Status Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateStatus")!;
+      const tool = registeredTools.get("quire.updateStatus");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", value: 50, name: "Updated" },
         createMockExtra({ quireToken: "token" })

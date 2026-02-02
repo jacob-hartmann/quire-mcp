@@ -43,7 +43,10 @@ describe("Project Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -71,7 +74,9 @@ describe("Project Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listProjects")!;
+      const tool = registeredTools.get("quire.listProjects");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler({}, createMockExtra())) as {
         isError?: boolean;
         content: { type: string; text?: string }[];
@@ -98,7 +103,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listProjects")!;
+      const tool = registeredTools.get("quire.listProjects");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -125,7 +132,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listProjects")!;
+      const tool = registeredTools.get("quire.listProjects");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { organizationId: "my-org" },
         createMockExtra({ quireToken: "token" })
@@ -144,7 +153,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listProjects")!;
+      const tool = registeredTools.get("quire.listProjects");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -177,7 +188,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getProject")!;
+      const tool = registeredTools.get("quire.getProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -201,7 +214,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getProject")!;
+      const tool = registeredTools.get("quire.getProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -234,7 +249,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateProject")!;
+      const tool = registeredTools.get("quire.updateProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-project", name: "Updated Project", description: "New desc" },
         createMockExtra({ quireToken: "token" })
@@ -263,7 +280,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateProject")!;
+      const tool = registeredTools.get("quire.updateProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         {
           id: "my-project",
@@ -289,7 +308,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateProject")!;
+      const tool = registeredTools.get("quire.updateProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-project", name: "New" },
         createMockExtra({ quireToken: "token" })
@@ -321,7 +342,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.exportProject")!;
+      const tool = registeredTools.get("quire.exportProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -352,7 +375,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.exportProject")!;
+      const tool = registeredTools.get("quire.exportProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-project", format: "csv" },
         createMockExtra({ quireToken: "token" })
@@ -363,7 +388,10 @@ describe("Project Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("id,name");
-      expect(mockClient.exportProject).toHaveBeenCalledWith("my-project", "csv");
+      expect(mockClient.exportProject).toHaveBeenCalledWith(
+        "my-project",
+        "csv"
+      );
     });
 
     it("should handle export errors", async () => {
@@ -376,7 +404,9 @@ describe("Project Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.exportProject")!;
+      const tool = registeredTools.get("quire.exportProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "nonexistent" },
         createMockExtra({ quireToken: "token" })

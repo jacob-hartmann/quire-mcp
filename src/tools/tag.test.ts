@@ -43,7 +43,10 @@ describe("Tag Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -72,7 +75,9 @@ describe("Tag Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listTags")!;
+      const tool = registeredTools.get("quire.listTags");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra()
@@ -102,7 +107,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTags")!;
+      const tool = registeredTools.get("quire.listTags");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -133,7 +140,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getTag")!;
+      const tool = registeredTools.get("quire.getTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TagOid" },
         createMockExtra({ quireToken: "token" })
@@ -157,7 +166,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getTag")!;
+      const tool = registeredTools.get("quire.getTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -186,7 +197,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTag")!;
+      const tool = registeredTools.get("quire.createTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", name: "Enhancement" },
         createMockExtra({ quireToken: "token" })
@@ -214,7 +227,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTag")!;
+      const tool = registeredTools.get("quire.createTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { projectId: "my-project", name: "Bug", color: 5 },
         createMockExtra({ quireToken: "token" })
@@ -236,7 +251,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.createTag")!;
+      const tool = registeredTools.get("quire.createTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", name: "Tag" },
         createMockExtra({ quireToken: "token" })
@@ -265,7 +282,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateTag")!;
+      const tool = registeredTools.get("quire.updateTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TagOid", name: "Updated Tag", color: 3 },
         createMockExtra({ quireToken: "token" })
@@ -296,7 +315,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteTag")!;
+      const tool = registeredTools.get("quire.deleteTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TagOid" },
         createMockExtra({ quireToken: "token" })
@@ -320,7 +341,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.deleteTag")!;
+      const tool = registeredTools.get("quire.deleteTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -335,10 +358,15 @@ describe("Tag Tools", () => {
 
   describe("authentication failures", () => {
     it("should return auth error for getTag", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.getTag")!;
+      const tool = registeredTools.get("quire.getTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TagOid" },
         createMockExtra()
@@ -349,10 +377,15 @@ describe("Tag Tools", () => {
     });
 
     it("should return auth error for createTag", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.createTag")!;
+      const tool = registeredTools.get("quire.createTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project", name: "Tag" },
         createMockExtra()
@@ -363,10 +396,15 @@ describe("Tag Tools", () => {
     });
 
     it("should return auth error for updateTag", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.updateTag")!;
+      const tool = registeredTools.get("quire.updateTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TagOid", name: "Updated" },
         createMockExtra()
@@ -377,10 +415,15 @@ describe("Tag Tools", () => {
     });
 
     it("should return auth error for deleteTag", async () => {
-      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.deleteTag")!;
+      const tool = registeredTools.get("quire.deleteTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TagOid" },
         createMockExtra()
@@ -402,7 +445,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listTags")!;
+      const tool = registeredTools.get("quire.listTags");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { projectId: "my-project" },
         createMockExtra({ quireToken: "token" })
@@ -421,7 +466,9 @@ describe("Tag Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateTag")!;
+      const tool = registeredTools.get("quire.updateTag");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { oid: "TagOid", name: "Updated" },
         createMockExtra({ quireToken: "token" })

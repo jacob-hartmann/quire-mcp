@@ -459,7 +459,9 @@ export async function startHttpServer(
 
     // Graceful shutdown handler
     const shutdown = (signal: string): void => {
-      console.error(`[quire-mcp] Received ${signal}, shutting down gracefully...`);
+      console.error(
+        `[quire-mcp] Received ${signal}, shutting down gracefully...`
+      );
 
       // Stop accepting new connections
       server.close(() => {
@@ -470,7 +472,9 @@ export async function startHttpServer(
       clearInterval(cleanupInterval);
 
       // Close all active sessions
-      console.error(`[quire-mcp] Closing ${sessions.size} active session(s)...`);
+      console.error(
+        `[quire-mcp] Closing ${sessions.size} active session(s)...`
+      );
       for (const [sessionId, session] of sessions.entries()) {
         try {
           session.transport.close().catch((err: unknown) => {
@@ -493,7 +497,11 @@ export async function startHttpServer(
     };
 
     // Handle termination signals
-    process.on("SIGINT", () => { shutdown("SIGINT"); });
-    process.on("SIGTERM", () => { shutdown("SIGTERM"); });
+    process.on("SIGINT", () => {
+      shutdown("SIGINT");
+    });
+    process.on("SIGTERM", () => {
+      shutdown("SIGTERM");
+    });
   });
 }

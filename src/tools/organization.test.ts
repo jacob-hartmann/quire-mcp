@@ -43,7 +43,10 @@ describe("Organization Tools", () => {
             extra: unknown
           ) => Promise<unknown>
         ) => {
-          registeredTools.set(name, { description: config.description, handler });
+          registeredTools.set(name, {
+            description: config.description,
+            handler,
+          });
         }
       ),
     } as unknown as McpServer;
@@ -56,7 +59,7 @@ describe("Organization Tools", () => {
   });
 
   it("should register all organization tools", () => {
-    expect(server.registerTool).toHaveBeenCalledTimes(3);
+    expect(server.registerTool.bind(server)).toHaveBeenCalledTimes(3);
     expect(registeredTools.has("quire.listOrganizations")).toBe(true);
     expect(registeredTools.has("quire.getOrganization")).toBe(true);
     expect(registeredTools.has("quire.updateOrganization")).toBe(true);
@@ -70,7 +73,9 @@ describe("Organization Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.listOrganizations")!;
+      const tool = registeredTools.get("quire.listOrganizations");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler({}, createMockExtra())) as {
         isError?: boolean;
         content: { type: string; text?: string }[];
@@ -97,7 +102,9 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listOrganizations")!;
+      const tool = registeredTools.get("quire.listOrganizations");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -124,7 +131,9 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.listOrganizations")!;
+      const tool = registeredTools.get("quire.listOrganizations");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         {},
         createMockExtra({ quireToken: "token" })
@@ -146,7 +155,9 @@ describe("Organization Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.getOrganization")!;
+      const tool = registeredTools.get("quire.getOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-org" },
         createMockExtra()
@@ -179,7 +190,9 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getOrganization")!;
+      const tool = registeredTools.get("quire.getOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-org" },
         createMockExtra({ quireToken: "token" })
@@ -192,7 +205,9 @@ describe("Organization Tools", () => {
       const text = extractTextContent(result);
       expect(text).toContain("my-org");
       expect(text).toContain("My Organization");
-      expect(mockClient.getOrganization).toHaveBeenCalledWith("my-org");
+      expect(mockClient.getOrganization.bind(mockClient)).toHaveBeenCalledWith(
+        "my-org"
+      );
     });
 
     it("should handle NOT_FOUND error", async () => {
@@ -205,7 +220,9 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.getOrganization")!;
+      const tool = registeredTools.get("quire.getOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "nonexistent" },
         createMockExtra({ quireToken: "token" })
@@ -216,7 +233,9 @@ describe("Organization Tools", () => {
 
       expect(isErrorResponse(result)).toBe(true);
       expect(extractTextContent(result)).toContain("NOT_FOUND");
-      expect(extractTextContent(result)).toContain("organization was not found");
+      expect(extractTextContent(result)).toContain(
+        "organization was not found"
+      );
     });
   });
 
@@ -228,7 +247,9 @@ describe("Organization Tools", () => {
       };
       vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
 
-      const tool = registeredTools.get("quire.updateOrganization")!;
+      const tool = registeredTools.get("quire.updateOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-org", addFollowers: ["user1"] },
         createMockExtra()
@@ -260,7 +281,9 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateOrganization")!;
+      const tool = registeredTools.get("quire.updateOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-org", addFollowers: ["user1", "user2"] },
         createMockExtra({ quireToken: "token" })
@@ -270,7 +293,9 @@ describe("Organization Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.updateOrganization).toHaveBeenCalledWith("my-org", {
+      expect(
+        mockClient.updateOrganization.bind(mockClient)
+      ).toHaveBeenCalledWith("my-org", {
         addFollowers: ["user1", "user2"],
       });
     });
@@ -288,13 +313,17 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateOrganization")!;
+      const tool = registeredTools.get("quire.updateOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { id: "my-org", removeFollowers: ["user3"] },
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.updateOrganization).toHaveBeenCalledWith("my-org", {
+      expect(
+        mockClient.updateOrganization.bind(mockClient)
+      ).toHaveBeenCalledWith("my-org", {
         removeFollowers: ["user3"],
       });
     });
@@ -312,13 +341,17 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateOrganization")!;
+      const tool = registeredTools.get("quire.updateOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       await tool.handler(
         { id: "my-org", followers: ["user1", "user2"] },
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.updateOrganization).toHaveBeenCalledWith("my-org", {
+      expect(
+        mockClient.updateOrganization.bind(mockClient)
+      ).toHaveBeenCalledWith("my-org", {
         followers: ["user1", "user2"],
       });
     });
@@ -335,7 +368,9 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateOrganization")!;
+      const tool = registeredTools.get("quire.updateOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-org", addFollowers: ["user1"] },
         createMockExtra({ quireToken: "token" })
@@ -360,7 +395,9 @@ describe("Organization Tools", () => {
         client: mockClient,
       });
 
-      const tool = registeredTools.get("quire.updateOrganization")!;
+      const tool = registeredTools.get("quire.updateOrganization");
+      expect(tool).toBeDefined();
+      if (!tool) return;
       const result = (await tool.handler(
         { id: "my-org" },
         createMockExtra({ quireToken: "token" })

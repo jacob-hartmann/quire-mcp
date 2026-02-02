@@ -318,7 +318,11 @@ export function registerTaskTools(server: McpServer): void {
       if (oid) {
         result = await clientResult.client.updateTask(oid, updateParams);
       } else if (projectId && taskId !== undefined) {
-        result = await clientResult.client.updateTask(projectId, taskId, updateParams);
+        result = await clientResult.client.updateTask(
+          projectId,
+          taskId,
+          updateParams
+        );
       } else {
         return formatValidationError(
           "Must provide either 'oid' or both 'projectId' and 'taskId'"

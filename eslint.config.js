@@ -50,5 +50,12 @@ export default tseslint.config(
       "*.config.js",
       "*.config.ts",
     ],
+  },
+  {
+    files: ["**/*.test.ts", "**/*.spec.ts"],
+    rules: {
+      "@typescript-eslint/unbound-method": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+    },
   }
 );

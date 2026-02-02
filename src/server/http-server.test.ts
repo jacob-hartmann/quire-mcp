@@ -4,6 +4,12 @@
  * Tests the HTTP server creation, middleware configuration, and request handling.
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-useless-constructor */
+
 import {
   describe,
   it,
@@ -161,23 +167,26 @@ vi.mock("express", () => {
         }
         return app;
       }),
-      listen: vi.fn(
-        (_port: number, _host: string, callback: () => void) => {
-          callback();
-          return {
-            on: vi.fn(),
-            close: vi.fn((cb: () => void) => { cb(); }),
-          };
-        }
-      ),
+      listen: vi.fn((_port: number, _host: string, callback: () => void) => {
+        callback();
+        return {
+          on: vi.fn(),
+          close: vi.fn((cb: () => void) => {
+            cb();
+          }),
+        };
+      }),
     };
     return app;
   };
 
   const mockApp = createMockApp();
-  const express = Object.assign(vi.fn(() => mockApp), {
-    json: vi.fn(() => vi.fn()),
-  });
+  const express = Object.assign(
+    vi.fn(() => mockApp),
+    {
+      json: vi.fn(() => vi.fn()),
+    }
+  );
   return { default: express };
 });
 
@@ -187,9 +196,9 @@ vi.mock("helmet", () => ({
 
 vi.mock("express-rate-limit", () => ({
   default: vi.fn(() => {
-    return vi.fn(
-      (_req: MockRequest, _res: MockResponse, next: () => void) => { next(); }
-    );
+    return vi.fn((_req: MockRequest, _res: MockResponse, next: () => void) => {
+      next();
+    });
   }),
 }));
 
@@ -286,15 +295,15 @@ vi.mock("@modelcontextprotocol/sdk/server/express.js", () => {
         }
         return app;
       }),
-      listen: vi.fn(
-        (_port: number, _host: string, callback: () => void) => {
-          callback();
-          return {
-            on: vi.fn(),
-            close: vi.fn((cb: () => void) => { cb(); }),
-          };
-        }
-      ),
+      listen: vi.fn((_port: number, _host: string, callback: () => void) => {
+        callback();
+        return {
+          on: vi.fn(),
+          close: vi.fn((cb: () => void) => {
+            cb();
+          }),
+        };
+      }),
     };
     return app;
   };
@@ -312,13 +321,9 @@ vi.mock(
   "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js",
   () => ({
     requireBearerAuth: vi.fn(
-      () =>
-        (
-          _req: MockRequest,
-          _res: MockResponse,
-          next: () => void
-        ) =>
-          { next(); }
+      () => (_req: MockRequest, _res: MockResponse, next: () => void) => {
+        next();
+      }
     ),
   })
 );
@@ -388,8 +393,9 @@ describe("HTTP Server", () => {
     host: "127.0.0.1",
     port: 3001,
     issuerUrl: "http://127.0.0.1:3001",
-    quireOAuthClientId: "test-client-id",
-    quireOAuthClientSecret: "test-client-secret",
+    quireClientId: "test-client-id",
+    quireClientSecret: "test-client-secret",
+    quireRedirectUri: "http://127.0.0.1:3001/callback",
   };
 
   let mockGetServer: Mock;
@@ -609,9 +615,8 @@ describe("HTTP Server", () => {
     });
 
     it("should handle initialize request for new session", async () => {
-      const { StreamableHTTPServerTransport } = await import(
-        "@modelcontextprotocol/sdk/server/streamableHttp.js"
-      );
+      const { StreamableHTTPServerTransport } =
+        await import("@modelcontextprotocol/sdk/server/streamableHttp.js");
 
       const req = createMockRequest({
         method: "POST",
