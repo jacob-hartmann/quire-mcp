@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "quire-mcp": "./dist/index.js"
+    "quire-mcp": "dist/index.js"
   },
   "files": [
     "dist"
@@ -41,7 +41,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jacob-hartmann/quire-mcp.git"
+    "url": "git+https://github.com/jacob-hartmann/quire-mcp.git"
   },
   "bugs": {
     "url": "https://github.com/jacob-hartmann/quire-mcp/issues"
