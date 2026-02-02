@@ -62,7 +62,7 @@ describe("quire.whoami tool", () => {
   });
 
   it("should register the quire.whoami tool", () => {
-    expect(server.registerTool.bind(server)).toHaveBeenCalledTimes(1);
+    expect(server.registerTool).toHaveBeenCalledTimes(1);
     expect(registeredTools.has("quire.whoami")).toBe(true);
   });
 

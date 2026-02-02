@@ -59,7 +59,7 @@ describe("Comment Tools", () => {
   });
 
   it("should register all comment tools", () => {
-    expect(server.registerTool.bind(server)).toHaveBeenCalledTimes(6);
+    expect(server.registerTool).toHaveBeenCalledTimes(6);
     expect(registeredTools.has("quire.listTaskComments")).toBe(true);
     expect(registeredTools.has("quire.addTaskComment")).toBe(true);
     expect(registeredTools.has("quire.updateComment")).toBe(true);
@@ -121,9 +121,7 @@ describe("Comment Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("First comment");
-      expect(mockClient.listTaskComments.bind(mockClient)).toHaveBeenCalledWith(
-        "TaskOid"
-      );
+      expect(mockClient.listTaskComments).toHaveBeenCalledWith("TaskOid");
     });
 
     it("should list comments by project ID and task ID", async () => {
@@ -147,7 +145,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.listTaskComments.bind(mockClient)).toHaveBeenCalledWith(
+      expect(mockClient.listTaskComments).toHaveBeenCalledWith(
         "my-project",
         123
       );
@@ -206,12 +204,9 @@ describe("Comment Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.addTaskComment.bind(mockClient)).toHaveBeenCalledWith(
-        "TaskOid",
-        {
-          description: "New comment",
-        }
-      );
+      expect(mockClient.addTaskComment).toHaveBeenCalledWith("TaskOid", {
+        description: "New comment",
+      });
     });
 
     it("should add comment by project ID and task ID", async () => {
@@ -235,7 +230,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.addTaskComment.bind(mockClient)).toHaveBeenCalledWith(
+      expect(mockClient.addTaskComment).toHaveBeenCalledWith(
         "my-project",
         123,
         { description: "Comment" }
@@ -317,12 +312,9 @@ describe("Comment Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.updateComment.bind(mockClient)).toHaveBeenCalledWith(
-        "CommentOid",
-        {
-          description: "Updated",
-        }
-      );
+      expect(mockClient.updateComment).toHaveBeenCalledWith("CommentOid", {
+        description: "Updated",
+      });
     });
 
     it("should handle NOT_FOUND error", async () => {
@@ -378,9 +370,7 @@ describe("Comment Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("deleted successfully");
-      expect(mockClient.deleteComment.bind(mockClient)).toHaveBeenCalledWith(
-        "CommentOid"
-      );
+      expect(mockClient.deleteComment).toHaveBeenCalledWith("CommentOid");
     });
   });
 
@@ -411,9 +401,7 @@ describe("Comment Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.listChatComments.bind(mockClient)).toHaveBeenCalledWith(
-        "ChatOid"
-      );
+      expect(mockClient.listChatComments).toHaveBeenCalledWith("ChatOid");
     });
 
     it("should list chat comments by project ID and chat ID", async () => {
@@ -437,7 +425,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.listChatComments.bind(mockClient)).toHaveBeenCalledWith(
+      expect(mockClient.listChatComments).toHaveBeenCalledWith(
         "my-project",
         "general"
       );
@@ -493,12 +481,9 @@ describe("Comment Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(mockClient.addChatComment.bind(mockClient)).toHaveBeenCalledWith(
-        "ChatOid",
-        {
-          description: "Chat message",
-        }
-      );
+      expect(mockClient.addChatComment).toHaveBeenCalledWith("ChatOid", {
+        description: "Chat message",
+      });
     });
 
     it("should add chat comment by project ID and chat ID", async () => {
@@ -522,7 +507,7 @@ describe("Comment Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.addChatComment.bind(mockClient)).toHaveBeenCalledWith(
+      expect(mockClient.addChatComment).toHaveBeenCalledWith(
         "my-project",
         "general",
         { description: "Message" }

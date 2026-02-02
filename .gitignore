@@ -30,4 +30,3 @@ pnpm-debug.log*
 
 # TypeScript cache
 *.tsbuildinfo
-package.json

@@ -59,7 +59,7 @@ describe("Organization Tools", () => {
   });
 
   it("should register all organization tools", () => {
-    expect(server.registerTool.bind(server)).toHaveBeenCalledTimes(3);
+    expect(server.registerTool).toHaveBeenCalledTimes(3);
     expect(registeredTools.has("quire.listOrganizations")).toBe(true);
     expect(registeredTools.has("quire.getOrganization")).toBe(true);
     expect(registeredTools.has("quire.updateOrganization")).toBe(true);
@@ -205,9 +205,7 @@ describe("Organization Tools", () => {
       const text = extractTextContent(result);
       expect(text).toContain("my-org");
       expect(text).toContain("My Organization");
-      expect(mockClient.getOrganization.bind(mockClient)).toHaveBeenCalledWith(
-        "my-org"
-      );
+      expect(mockClient.getOrganization).toHaveBeenCalledWith("my-org");
     });
 
     it("should handle NOT_FOUND error", async () => {
@@ -293,9 +291,7 @@ describe("Organization Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(
-        mockClient.updateOrganization.bind(mockClient)
-      ).toHaveBeenCalledWith("my-org", {
+      expect(mockClient.updateOrganization).toHaveBeenCalledWith("my-org", {
         addFollowers: ["user1", "user2"],
       });
     });
@@ -321,9 +317,7 @@ describe("Organization Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(
-        mockClient.updateOrganization.bind(mockClient)
-      ).toHaveBeenCalledWith("my-org", {
+      expect(mockClient.updateOrganization).toHaveBeenCalledWith("my-org", {
         removeFollowers: ["user3"],
       });
     });
@@ -349,9 +343,7 @@ describe("Organization Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(
-        mockClient.updateOrganization.bind(mockClient)
-      ).toHaveBeenCalledWith("my-org", {
+      expect(mockClient.updateOrganization).toHaveBeenCalledWith("my-org", {
         followers: ["user1", "user2"],
       });
     });
