@@ -14,6 +14,7 @@ dist/
 *.swp
 *.swo
 .vscode/settings.json
+.claude/
 
 # OS files
 .DS_Store
@@ -29,3 +30,4 @@ pnpm-debug.log*
 
 # TypeScript cache
 *.tsbuildinfo
+package.json

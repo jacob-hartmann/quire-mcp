@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerDocumentTools } from "./document.js";
 import {
   createMockExtra,
@@ -78,7 +78,7 @@ describe("Document Tools", () => {
         createMockExtra()
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -110,7 +110,7 @@ describe("Document Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -169,7 +169,7 @@ describe("Document Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -216,7 +216,7 @@ describe("Document Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -247,7 +247,7 @@ describe("Document Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -356,7 +356,7 @@ describe("Document Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -383,7 +383,7 @@ describe("Document Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -431,8 +431,163 @@ describe("Document Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+  });
+
+  describe("authentication failures", () => {
+    it("should return auth error for getDocument", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.getDocument")!;
+      const result = (await tool.handler(
+        { oid: "DocOid" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for listDocuments", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.listDocuments")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for updateDocument", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.updateDocument")!;
+      const result = (await tool.handler(
+        { oid: "DocOid", name: "Updated" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return auth error for deleteDocument", async () => {
+      const mockResult: QuireClientResult = { success: false, error: "No token" };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.deleteDocument")!;
+      const result = (await tool.handler(
+        { oid: "DocOid" },
+        createMockExtra()
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+  });
+
+  describe("API error handling", () => {
+    it("should handle createDocument API error", async () => {
+      const mockClient = createMockClient({
+        createDocument: vi.fn().mockResolvedValueOnce(mockErrors.forbidden()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.createDocument")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project", name: "Doc" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle getDocument API error", async () => {
+      const mockClient = createMockClient({
+        getDocument: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getDocument")!;
+      const result = (await tool.handler(
+        { oid: "nonexistent" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle listDocuments API error", async () => {
+      const mockClient = createMockClient({
+        listDocuments: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listDocuments")!;
+      const result = (await tool.handler(
+        { ownerType: "project", ownerId: "my-project" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle updateDocument API error", async () => {
+      const mockClient = createMockClient({
+        updateDocument: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateDocument")!;
+      const result = (await tool.handler(
+        { oid: "DocOid", name: "Updated" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
+
+      expect(isErrorResponse(result)).toBe(true);
+    });
+
+    it("should handle deleteDocument API error", async () => {
+      const mockClient = createMockClient({
+        deleteDocument: vi.fn().mockResolvedValueOnce(mockErrors.serverError()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.deleteDocument")!;
+      const result = (await tool.handler(
+        { oid: "DocOid" },
+        createMockExtra({ quireToken: "token" })
+      )) as { isError?: boolean; content: { type: string; text?: string }[] };
 
       expect(isErrorResponse(result)).toBe(true);
     });

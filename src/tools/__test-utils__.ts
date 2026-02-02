@@ -547,7 +547,7 @@ export const mockErrors = {
  * Extract text content from MCP tool response
  */
 export function extractTextContent(
-  response: { content: Array<{ type: string; text?: string }> } | undefined
+  response: { content: { type: string; text?: string }[] } | undefined
 ): string {
   if (!response) return "";
   const textContent = response.content.find((c) => c.type === "text");

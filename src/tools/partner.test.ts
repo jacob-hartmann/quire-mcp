@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerPartnerTools } from "./partner.js";
 import {
   createMockExtra,
@@ -75,7 +75,7 @@ describe("Partner Tools", () => {
         createMockExtra()
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -106,7 +106,7 @@ describe("Partner Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -130,7 +130,7 @@ describe("Partner Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -162,7 +162,7 @@ describe("Partner Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -187,7 +187,7 @@ describe("Partner Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -213,11 +213,197 @@ describe("Partner Tools", () => {
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("[]");
+    });
+
+    it("should return error on authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.listPartners")!;
+      const result = (await tool.handler(
+        { projectId: "my-project" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+  });
+
+  describe("error handling for all error codes", () => {
+    it("should handle UNAUTHORIZED error", async () => {
+      const mockClient = createMockClient({
+        getPartner: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getPartner")!;
+      const result = (await tool.handler(
+        { oid: "partner-oid" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("UNAUTHORIZED");
+      expect(extractTextContent(result)).toContain("invalid or expired");
+    });
+
+    it("should handle FORBIDDEN error", async () => {
+      const mockClient = createMockClient({
+        getPartner: vi.fn().mockResolvedValueOnce(mockErrors.forbidden()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getPartner")!;
+      const result = (await tool.handler(
+        { oid: "partner-oid" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("FORBIDDEN");
+      expect(extractTextContent(result)).toContain("permission");
+    });
+
+    it("should handle RATE_LIMITED error", async () => {
+      const mockClient = createMockClient({
+        getPartner: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getPartner")!;
+      const result = (await tool.handler(
+        { oid: "partner-oid" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("RATE_LIMITED");
+      expect(extractTextContent(result)).toContain("rate limit");
+    });
+
+    it("should handle SERVER_ERROR with original message", async () => {
+      const mockClient = createMockClient({
+        getPartner: vi.fn().mockResolvedValueOnce(mockErrors.serverError()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.getPartner")!;
+      const result = (await tool.handler(
+        { oid: "partner-oid" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("SERVER_ERROR");
+    });
+
+    it("should handle listPartners UNAUTHORIZED error", async () => {
+      const mockClient = createMockClient({
+        listPartners: vi.fn().mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listPartners")!;
+      const result = (await tool.handler(
+        { projectId: "my-project" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("UNAUTHORIZED");
+    });
+
+    it("should handle listPartners FORBIDDEN error", async () => {
+      const mockClient = createMockClient({
+        listPartners: vi.fn().mockResolvedValueOnce(mockErrors.forbidden()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listPartners")!;
+      const result = (await tool.handler(
+        { projectId: "my-project" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("FORBIDDEN");
+    });
+
+    it("should handle listPartners RATE_LIMITED error", async () => {
+      const mockClient = createMockClient({
+        listPartners: vi.fn().mockResolvedValueOnce(mockErrors.rateLimited()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.listPartners")!;
+      const result = (await tool.handler(
+        { projectId: "my-project" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("RATE_LIMITED");
     });
   });
 });

@@ -60,7 +60,7 @@ export class LRUCache<V> {
       this.cache.delete(key);
     } else if (this.cache.size >= this.maxSize) {
       // Evict oldest entry (first item in Map iteration order)
-      const oldestKey = this.cache.keys().next().value as string;
+      const oldestKey = this.cache.keys().next().value!;
       const oldestValue = this.cache.get(oldestKey);
       this.cache.delete(oldestKey);
       if (this.onEvict && oldestValue !== undefined) {

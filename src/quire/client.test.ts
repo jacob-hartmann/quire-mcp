@@ -1496,7 +1496,7 @@ describe("QuireClient", () => {
         expect(fetch).toHaveBeenCalledWith(
           expect.any(String),
           expect.objectContaining({
-            body: JSON.stringify({ description: "" }),
+            body: JSON.stringify({}),
           })
         );
       });

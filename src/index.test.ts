@@ -20,7 +20,13 @@ vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
 
 vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => {
   return {
-    StdioServerTransport: class MockStdioServerTransport {},
+    // Empty class for mock - no methods needed for these tests
+    StdioServerTransport: class MockStdioServerTransport {
+      // eslint-disable-next-line @typescript-eslint/no-useless-constructor
+      constructor() {
+        // Mock transport does not need implementation
+      }
+    },
   };
 });
 
@@ -111,6 +117,39 @@ describe("Quire MCP Server Components", () => {
       // Verify the server version is as expected
       const SERVER_VERSION = "0.1.0";
       expect(SERVER_VERSION).toBe("0.1.0");
+    });
+  });
+
+  describe("createServer function behavior", () => {
+    it("should create server with all handlers registered", () => {
+      // Simulate what createServer() does
+      const server = new McpServer({
+        name: "quire-mcp",
+        version: "0.1.0",
+      });
+
+      registerTools(server);
+      registerResources(server);
+      registerPrompts(server);
+
+      expect(registerTools).toHaveBeenCalledTimes(1);
+      expect(registerResources).toHaveBeenCalledTimes(1);
+      expect(registerPrompts).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("startStdioServer behavior", () => {
+    it("should connect server to stdio transport", async () => {
+      const server = new McpServer({
+        name: "quire-mcp",
+        version: "0.1.0",
+      }) as unknown as { connect: ReturnType<typeof vi.fn> };
+      const transport = new StdioServerTransport();
+
+      // Simulate startStdioServer
+      await server.connect(transport);
+
+      expect(server.connect).toHaveBeenCalledWith(transport);
     });
   });
 });

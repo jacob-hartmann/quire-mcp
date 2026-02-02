@@ -39,7 +39,7 @@ let mcpGetHandler: (req: MockRequest, res: MockResponse) => Promise<void>;
 let mcpDeleteHandler: (req: MockRequest, res: MockResponse) => Promise<void>;
 
 // Track registered routes
-const registeredRoutes: Map<string, Map<string, unknown>> = new Map();
+const registeredRoutes = new Map<string, Map<string, unknown>>();
 
 interface MockRequest {
   method: string;
@@ -151,7 +151,7 @@ vi.mock("express", () => {
           callback();
           return {
             on: vi.fn(),
-            close: vi.fn((cb: () => void) => cb()),
+            close: vi.fn((cb: () => void) => { cb(); }),
           };
         }
       ),
@@ -173,7 +173,7 @@ vi.mock("helmet", () => ({
 vi.mock("express-rate-limit", () => ({
   default: vi.fn(() => {
     return vi.fn(
-      (_req: MockRequest, _res: MockResponse, next: () => void) => next()
+      (_req: MockRequest, _res: MockResponse, next: () => void) => { next(); }
     );
   }),
 }));
@@ -261,7 +261,7 @@ vi.mock("@modelcontextprotocol/sdk/server/express.js", () => {
           callback();
           return {
             on: vi.fn(),
-            close: vi.fn((cb: () => void) => cb()),
+            close: vi.fn((cb: () => void) => { cb(); }),
           };
         }
       ),
@@ -288,7 +288,7 @@ vi.mock(
           _res: MockResponse,
           next: () => void
         ) =>
-          next()
+          { next(); }
     ),
   })
 );

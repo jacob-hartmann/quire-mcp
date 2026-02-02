@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerWhoamiTool } from "./whoami.js";
 import {
   createMockExtra,
@@ -75,7 +75,7 @@ describe("quire.whoami tool", () => {
       const extra = createMockExtra();
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -109,7 +109,7 @@ describe("quire.whoami tool", () => {
       const extra = createMockExtra({ quireToken: "valid-token" });
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(false);
@@ -135,7 +135,7 @@ describe("quire.whoami tool", () => {
       const extra = createMockExtra({ quireToken: "invalid-token" });
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -158,7 +158,7 @@ describe("quire.whoami tool", () => {
       const extra = createMockExtra({ quireToken: "valid-token" });
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
@@ -181,7 +181,7 @@ describe("quire.whoami tool", () => {
       const extra = createMockExtra({ quireToken: "valid-token" });
       const result = (await tool.handler({}, extra)) as {
         isError?: boolean;
-        content: Array<{ type: string; text?: string }>;
+        content: { type: string; text?: string }[];
       };
 
       expect(isErrorResponse(result)).toBe(true);
