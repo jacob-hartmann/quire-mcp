@@ -657,8 +657,8 @@ describe("Chat Tools", () => {
     });
   });
 
-  describe("createChat with members", () => {
-    it("should create chat with members array", async () => {
+  describe("createChat", () => {
+    it("should create chat", async () => {
       const mockClient = createMockClient({
         createChat: vi.fn().mockResolvedValueOnce({
           success: true,
@@ -679,7 +679,6 @@ describe("Chat Tools", () => {
           ownerType: "organization",
           ownerId: "my-org",
           name: "Dev",
-          members: ["user1", "user2"],
         },
         createMockExtra({ quireToken: "token" })
       );
@@ -687,13 +686,13 @@ describe("Chat Tools", () => {
       expect(mockClient.createChat).toHaveBeenCalledWith(
         "organization",
         "my-org",
-        { name: "Dev", members: ["user1", "user2"] }
+        { name: "Dev" }
       );
     });
   });
 
-  describe("updateChat with member modifications", () => {
-    it("should update chat with addMembers", async () => {
+  describe("updateChat with property modifications", () => {
+    it("should update chat with name", async () => {
       const mockClient = createMockClient({
         updateChat: vi.fn().mockResolvedValueOnce({
           success: true,
@@ -710,16 +709,16 @@ describe("Chat Tools", () => {
       expect(tool).toBeDefined();
       if (!tool) return;
       await tool.handler(
-        { oid: "chat-oid", addMembers: ["user1", "user2"] },
+        { oid: "chat-oid", name: "Updated Chat" },
         createMockExtra({ quireToken: "token" })
       );
 
       expect(mockClient.updateChat).toHaveBeenCalledWith("chat-oid", {
-        addMembers: ["user1", "user2"],
+        name: "Updated Chat",
       });
     });
 
-    it("should update chat with removeMembers", async () => {
+    it("should update chat with description", async () => {
       const mockClient = createMockClient({
         updateChat: vi.fn().mockResolvedValueOnce({
           success: true,
@@ -736,16 +735,16 @@ describe("Chat Tools", () => {
       expect(tool).toBeDefined();
       if (!tool) return;
       await tool.handler(
-        { oid: "chat-oid", removeMembers: ["user3"] },
+        { oid: "chat-oid", description: "Updated description" },
         createMockExtra({ quireToken: "token" })
       );
 
       expect(mockClient.updateChat).toHaveBeenCalledWith("chat-oid", {
-        removeMembers: ["user3"],
+        description: "Updated description",
       });
     });
 
-    it("should update chat with all member operations", async () => {
+    it("should update chat with multiple properties", async () => {
       const mockClient = createMockClient({
         updateChat: vi.fn().mockResolvedValueOnce({
           success: true,
@@ -764,17 +763,17 @@ describe("Chat Tools", () => {
       await tool.handler(
         {
           oid: "chat-oid",
-          members: ["user1"],
-          addMembers: ["user2"],
-          removeMembers: ["user3"],
+          name: "Updated Chat",
+          description: "New description",
+          archived: true,
         },
         createMockExtra({ quireToken: "token" })
       );
 
       expect(mockClient.updateChat).toHaveBeenCalledWith("chat-oid", {
-        members: ["user1"],
-        addMembers: ["user2"],
-        removeMembers: ["user3"],
+        name: "Updated Chat",
+        description: "New description",
+        archived: true,
       });
     });
   });

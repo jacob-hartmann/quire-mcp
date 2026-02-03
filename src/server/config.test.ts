@@ -1,11 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { getHttpServerConfig } from "./config.js";
 
 describe("getHttpServerConfig", () => {
   const originalEnv = process.env;
+  const consoleErrorSpy = vi
+    .spyOn(console, "error")
+    .mockImplementation(vi.fn());
 
   beforeEach(() => {
     process.env = { ...originalEnv };
+    consoleErrorSpy.mockClear();
   });
 
   afterEach(() => {

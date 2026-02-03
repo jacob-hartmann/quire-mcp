@@ -116,7 +116,7 @@ describe("Project Tools", () => {
 
       expect(isErrorResponse(result)).toBe(false);
       expect(extractTextContent(result)).toContain("project-1");
-      expect(mockClient.listProjects).toHaveBeenCalledWith(undefined);
+      expect(mockClient.listProjects).toHaveBeenCalledWith(undefined, {});
     });
 
     it("should filter by organization ID", async () => {
@@ -140,7 +140,7 @@ describe("Project Tools", () => {
         createMockExtra({ quireToken: "token" })
       );
 
-      expect(mockClient.listProjects).toHaveBeenCalledWith("my-org");
+      expect(mockClient.listProjects).toHaveBeenCalledWith("my-org", {});
     });
 
     it("should handle API errors", async () => {
@@ -357,7 +357,8 @@ describe("Project Tools", () => {
       expect(extractTextContent(result)).toContain("Task 1");
       expect(mockClient.exportProject).toHaveBeenCalledWith(
         "my-project",
-        undefined
+        undefined,
+        {}
       );
     });
 
@@ -390,7 +391,8 @@ describe("Project Tools", () => {
       expect(extractTextContent(result)).toContain("id,name");
       expect(mockClient.exportProject).toHaveBeenCalledWith(
         "my-project",
-        "csv"
+        "csv",
+        {}
       );
     });
 

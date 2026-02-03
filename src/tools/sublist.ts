@@ -252,9 +252,7 @@ export function registerSublistTools(server: McpServer): void {
                 .describe("Task OID to add or remove from sublist"),
               exclude: z
                 .boolean()
-                .describe(
-                  "If true, removes the task; if false, adds the task"
-                ),
+                .describe("If true, removes the task; if false, adds the task"),
               single: z
                 .boolean()
                 .describe(
@@ -263,9 +261,7 @@ export function registerSublistTools(server: McpServer): void {
             })
           )
           .optional()
-          .describe(
-            "List of changes to add or remove tasks from this sublist"
-          ),
+          .describe("List of changes to add or remove tasks from this sublist"),
         iconColor: z
           .string()
           .optional()

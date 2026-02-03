@@ -73,7 +73,7 @@ describe("Notification Tools", () => {
 
       const tool = registeredTools.get("quire.sendNotification")!;
       const result = (await tool.handler(
-        { message: "Hello!", userIds: ["user1"] },
+        { message: "Hello!" },
         createMockExtra()
       )) as {
         isError?: boolean;
@@ -99,7 +99,7 @@ describe("Notification Tools", () => {
 
       const tool = registeredTools.get("quire.sendNotification")!;
       const result = (await tool.handler(
-        { message: "Hello!", userIds: ["user1", "user2"] },
+        { message: "Hello!" },
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
@@ -110,7 +110,6 @@ describe("Notification Tools", () => {
       expect(extractTextContent(result)).toContain("success");
       expect(mockClient.sendNotification).toHaveBeenCalledWith({
         message: "Hello!",
-        userIds: ["user1", "user2"],
       });
     });
 
@@ -131,7 +130,6 @@ describe("Notification Tools", () => {
       await tool.handler(
         {
           message: "Check this out!",
-          userIds: ["user1"],
           url: "https://quire.io/w/my-project",
         },
         createMockExtra({ quireToken: "token" })
@@ -139,7 +137,6 @@ describe("Notification Tools", () => {
 
       expect(mockClient.sendNotification).toHaveBeenCalledWith({
         message: "Check this out!",
-        userIds: ["user1"],
         url: "https://quire.io/w/my-project",
       });
     });
@@ -156,7 +153,7 @@ describe("Notification Tools", () => {
 
       const tool = registeredTools.get("quire.sendNotification")!;
       const result = (await tool.handler(
-        { message: "Hello!", userIds: ["user1"] },
+        { message: "Hello!" },
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
@@ -181,7 +178,7 @@ describe("Notification Tools", () => {
 
       const tool = registeredTools.get("quire.sendNotification")!;
       const result = (await tool.handler(
-        { message: "Hello!", userIds: ["user1"] },
+        { message: "Hello!" },
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
@@ -206,7 +203,7 @@ describe("Notification Tools", () => {
 
       const tool = registeredTools.get("quire.sendNotification")!;
       const result = (await tool.handler(
-        { message: "Hello!", userIds: ["user1"] },
+        { message: "Hello!" },
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
@@ -230,7 +227,7 @@ describe("Notification Tools", () => {
 
       const tool = registeredTools.get("quire.sendNotification")!;
       const result = (await tool.handler(
-        { message: "Hello!", userIds: ["nonexistent-user"] },
+        { message: "Hello!" },
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
@@ -256,7 +253,7 @@ describe("Notification Tools", () => {
 
       const tool = registeredTools.get("quire.sendNotification")!;
       const result = (await tool.handler(
-        { message: "Hello!", userIds: ["user1"] },
+        { message: "Hello!" },
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
@@ -267,7 +264,7 @@ describe("Notification Tools", () => {
       expect(extractTextContent(result)).toContain("SERVER_ERROR");
     });
 
-    it("should report correct user count in success message", async () => {
+    it("should report success message", async () => {
       const mockClient = createMockClient({
         sendNotification: vi.fn().mockResolvedValueOnce({
           success: true,
@@ -282,7 +279,7 @@ describe("Notification Tools", () => {
 
       const tool = registeredTools.get("quire.sendNotification")!;
       const result = (await tool.handler(
-        { message: "Hello!", userIds: ["user1", "user2", "user3"] },
+        { message: "Hello!" },
         createMockExtra({ quireToken: "token" })
       )) as {
         isError?: boolean;
@@ -290,7 +287,7 @@ describe("Notification Tools", () => {
       };
 
       expect(isErrorResponse(result)).toBe(false);
-      expect(extractTextContent(result)).toContain("3 user(s)");
+      expect(extractTextContent(result)).toContain("successfully");
     });
   });
 });

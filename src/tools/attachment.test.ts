@@ -135,7 +135,12 @@ describe("Attachment Tools", () => {
       const mockClient = createMockClient({
         uploadTaskAttachment: vi.fn().mockResolvedValueOnce({
           success: true,
-          data: { name: "data.json", length: 10, url: "https://quire.io/attachments/data.json", oid: "attachment-oid" },
+          data: {
+            name: "data.json",
+            length: 10,
+            url: "https://quire.io/attachments/data.json",
+            oid: "attachment-oid",
+          },
         }),
       });
 
@@ -297,7 +302,12 @@ describe("Attachment Tools", () => {
       const mockClient = createMockClient({
         uploadCommentAttachment: vi.fn().mockResolvedValueOnce({
           success: true,
-          data: { name: "image.png", length: 20, url: "https://quire.io/attachments/image.png", oid: "attachment-oid" },
+          data: {
+            name: "image.png",
+            length: 20,
+            url: "https://quire.io/attachments/image.png",
+            oid: "attachment-oid",
+          },
         }),
       });
 

@@ -17,10 +17,14 @@ vi.mock("node:fs", () => ({
 
 describe("token-store", () => {
   const originalEnv = process.env;
+  const consoleErrorSpy = vi
+    .spyOn(console, "error")
+    .mockImplementation(vi.fn());
 
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    consoleErrorSpy.mockClear();
     process.env = { ...originalEnv };
   });
 

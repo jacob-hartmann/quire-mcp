@@ -979,7 +979,7 @@ describe("QuireClient", () => {
         await client.searchTasks("my-project", "bug");
 
         expect(fetch).toHaveBeenCalledWith(
-          expect.stringContaining("/task/search/id/my-project?keyword=bug"),
+          expect.stringContaining("/task/search/id/my-project?text=bug"),
           expect.any(Object)
         );
       });
@@ -991,7 +991,7 @@ describe("QuireClient", () => {
         await client.searchTasks("AbC123", "feature");
 
         expect(fetch).toHaveBeenCalledWith(
-          expect.stringContaining("/task/search/AbC123?keyword=feature"),
+          expect.stringContaining("/task/search/AbC123?text=feature"),
           expect.any(Object)
         );
       });
@@ -1010,7 +1010,7 @@ describe("QuireClient", () => {
         const call = vi.mocked(fetch).mock.calls[0];
         expect(call).toBeDefined();
         const url = call?.[0] as string;
-        expect(url).toContain("keyword=test");
+        expect(url).toContain("text=test");
         expect(url).toContain("status=100");
         expect(url).toContain("priority=1");
         expect(url).toContain("assignee=user123");
@@ -1065,7 +1065,7 @@ describe("QuireClient", () => {
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining(
-            "/task/search-folder/id/my-folder?keyword=keyword"
+            "/task/search-folder/id/my-folder?text=keyword"
           ),
           expect.any(Object)
         );
@@ -1078,7 +1078,7 @@ describe("QuireClient", () => {
         await client.searchFolderTasks("AbC123", "keyword");
 
         expect(fetch).toHaveBeenCalledWith(
-          expect.stringContaining("/task/search-folder/AbC123?keyword=keyword"),
+          expect.stringContaining("/task/search-folder/AbC123?text=keyword"),
           expect.any(Object)
         );
       });
@@ -1113,7 +1113,7 @@ describe("QuireClient", () => {
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining(
-            "/task/search-organization/id/my-org?keyword=keyword"
+            "/task/search-organization/id/my-org?text=keyword"
           ),
           expect.any(Object)
         );
@@ -1127,7 +1127,7 @@ describe("QuireClient", () => {
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining(
-            "/task/search-organization/AbC123?keyword=keyword"
+            "/task/search-organization/AbC123?text=keyword"
           ),
           expect.any(Object)
         );
@@ -1694,13 +1694,13 @@ describe("QuireClient", () => {
         );
 
         const client = new QuireClient({ token: "test-token" });
-        await client.createStatus("my-project", { name: "Review" });
+        await client.createStatus("my-project", { name: "Review", value: 200 });
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining("/status/id/my-project"),
           expect.objectContaining({
             method: "POST",
-            body: JSON.stringify({ name: "Review" }),
+            body: JSON.stringify({ name: "Review", value: 200 }),
           })
         );
       });
@@ -1711,7 +1711,7 @@ describe("QuireClient", () => {
         );
 
         const client = new QuireClient({ token: "test-token" });
-        await client.createStatus("AbC123", { name: "Review" });
+        await client.createStatus("AbC123", { name: "Review", value: 200 });
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining("/status/AbC123"),
@@ -1858,14 +1858,14 @@ describe("QuireClient", () => {
         const client = new QuireClient({ token: "test-token" });
         await client.createDocument("organization", "my-org", {
           name: "Doc",
-          content: "Content",
+          description: "Content",
         });
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining("/doc/id/organization/my-org"),
           expect.objectContaining({
             method: "POST",
-            body: JSON.stringify({ name: "Doc", content: "Content" }),
+            body: JSON.stringify({ name: "Doc", description: "Content" }),
           })
         );
       });
@@ -2010,7 +2010,7 @@ describe("QuireClient", () => {
 
         const client = new QuireClient({ token: "test-token" });
         await client.updateDocument("project", "AbC123", "readme", {
-          content: "New content",
+          description: "New content",
         });
 
         expect(fetch).toHaveBeenCalledWith(
@@ -2658,7 +2658,6 @@ describe("QuireClient", () => {
         const client = new QuireClient({ token: "test-token" });
         await client.sendNotification({
           message: "Hello!",
-          userIds: ["user1", "user2"],
         });
 
         expect(fetch).toHaveBeenCalledWith(
@@ -2667,7 +2666,6 @@ describe("QuireClient", () => {
             method: "POST",
             body: JSON.stringify({
               message: "Hello!",
-              userIds: ["user1", "user2"],
             }),
           })
         );
@@ -2679,7 +2677,6 @@ describe("QuireClient", () => {
         const client = new QuireClient({ token: "test-token" });
         const params = {
           message: "Hello!",
-          userIds: ["user1"],
           url: undefined,
         };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
@@ -2690,7 +2687,6 @@ describe("QuireClient", () => {
           expect.objectContaining({
             body: JSON.stringify({
               message: "Hello!",
-              userIds: ["user1"],
             }),
           })
         );
@@ -2714,7 +2710,12 @@ describe("QuireClient", () => {
     describe("uploadTaskAttachment", () => {
       it("should upload attachment to task", async () => {
         vi.mocked(fetch).mockResolvedValueOnce(
-          mockResponse({ name: "file.txt", length: 12, url: "https://quire.io/file.txt", oid: "attach1" })
+          mockResponse({
+            name: "file.txt",
+            length: 12,
+            url: "https://quire.io/file.txt",
+            oid: "attach1",
+          })
         );
 
         const client = new QuireClient({ token: "test-token" });
@@ -2740,7 +2741,12 @@ describe("QuireClient", () => {
 
       it("should use custom mime type", async () => {
         vi.mocked(fetch).mockResolvedValueOnce(
-          mockResponse({ name: "file.json", length: 15, url: "https://quire.io/file.json", oid: "attach1" })
+          mockResponse({
+            name: "file.json",
+            length: 15,
+            url: "https://quire.io/file.json",
+            oid: "attach1",
+          })
         );
 
         const client = new QuireClient({ token: "test-token" });
@@ -2764,7 +2770,12 @@ describe("QuireClient", () => {
 
       it("should encode filename with special characters", async () => {
         vi.mocked(fetch).mockResolvedValueOnce(
-          mockResponse({ name: "file name.txt", length: 10, url: "https://quire.io/file%20name.txt", oid: "attach1" })
+          mockResponse({
+            name: "file name.txt",
+            length: 10,
+            url: "https://quire.io/file%20name.txt",
+            oid: "attach1",
+          })
         );
 
         const client = new QuireClient({ token: "test-token" });
@@ -2870,7 +2881,12 @@ describe("QuireClient", () => {
     describe("uploadCommentAttachment", () => {
       it("should upload attachment to comment", async () => {
         vi.mocked(fetch).mockResolvedValueOnce(
-          mockResponse({ name: "file.txt", length: 12, url: "https://quire.io/file.txt", oid: "attach1" })
+          mockResponse({
+            name: "file.txt",
+            length: 12,
+            url: "https://quire.io/file.txt",
+            oid: "attach1",
+          })
         );
 
         const client = new QuireClient({ token: "test-token" });
@@ -2896,7 +2912,12 @@ describe("QuireClient", () => {
 
       it("should use custom mime type", async () => {
         vi.mocked(fetch).mockResolvedValueOnce(
-          mockResponse({ name: "image.png", length: 20, url: "https://quire.io/image.png", oid: "attach1" })
+          mockResponse({
+            name: "image.png",
+            length: 20,
+            url: "https://quire.io/image.png",
+            oid: "attach1",
+          })
         );
 
         const client = new QuireClient({ token: "test-token" });

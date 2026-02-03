@@ -355,8 +355,6 @@ describe("Task Tools", () => {
           start: "2024-12-01",
           assignees: ["user1"],
           tags: [1, 2],
-          parentOid: "ParentOid",
-          afterOid: "AfterOid",
         },
         createMockExtra({ quireToken: "token" })
       );
@@ -370,8 +368,6 @@ describe("Task Tools", () => {
         start: "2024-12-01",
         assignees: ["user1"],
         tags: [1, 2],
-        parentOid: "ParentOid",
-        afterOid: "AfterOid",
       });
     });
 

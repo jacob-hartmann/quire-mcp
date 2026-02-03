@@ -50,7 +50,7 @@ describe("escapeHtml (property-based)", () => {
       fc.property(fc.string(), (str) => {
         const escaped = escapeHtml(str);
         // Safe strings without special chars should remain unchanged
-        if (!str.match(/[<>&"]/)) {
+        if (!/[<>&"]/.exec(str)) {
           expect(escaped).toBe(str);
         }
       })
@@ -63,10 +63,10 @@ describe("escapeHtml (property-based)", () => {
         const escaped = escapeHtml(str);
         // Length should increase for each special char:
         // & -> &amp; (+4), < -> &lt; (+3), > -> &gt; (+3), " -> &quot; (+5)
-        const ampCount = (str.match(/&/g) || []).length;
-        const ltCount = (str.match(/</g) || []).length;
-        const gtCount = (str.match(/>/g) || []).length;
-        const quotCount = (str.match(/"/g) || []).length;
+        const ampCount = (str.match(/&/g) ?? []).length;
+        const ltCount = (str.match(/</g) ?? []).length;
+        const gtCount = (str.match(/>/g) ?? []).length;
+        const quotCount = (str.match(/"/g) ?? []).length;
 
         const expectedLength =
           str.length + ampCount * 4 + ltCount * 3 + gtCount * 3 + quotCount * 5;
@@ -158,12 +158,9 @@ describe("verifyPkceChallenge (property-based)", () => {
 describe("isOid (property-based)", () => {
   it("strings with dots are always OIDs", () => {
     fc.assert(
-      fc.property(
-        fc.stringMatching(/^[a-zA-Z0-9]*\.[a-zA-Z0-9.]*$/),
-        (str) => {
-          expect(isOid(str)).toBe(true);
-        }
-      )
+      fc.property(fc.stringMatching(/^[a-zA-Z0-9]*\.[a-zA-Z0-9.]*$/), (str) => {
+        expect(isOid(str)).toBe(true);
+      })
     );
   });
 
@@ -492,7 +489,7 @@ describe("isLocalhost (property-based)", () => {
   it("invalid URLs return false", () => {
     fc.assert(
       fc.property(fc.string(), (str) => {
-        fc.pre(!str.includes("://") || !str.match(/^https?:\/\//));
+        fc.pre(!str.includes("://") || !/^https?:\/\//.exec(str));
         expect(isLocalhost(str)).toBe(false);
       })
     );

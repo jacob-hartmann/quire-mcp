@@ -237,10 +237,7 @@ export function registerDocumentTools(server: McpServer): void {
           .optional()
           .describe("The document ID within the owner"),
         name: z.string().optional().describe("New document name/title"),
-        id: z
-          .string()
-          .optional()
-          .describe("New ID for this document"),
+        id: z.string().optional().describe("New ID for this document"),
         description: z
           .string()
           .optional()

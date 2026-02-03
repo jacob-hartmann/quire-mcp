@@ -529,11 +529,11 @@ export interface UpdateSublistParams {
   name?: string;
   id?: string;
   description?: string;
-  changes?: Array<{
+  changes?: {
     task: string;
     exclude: boolean;
     single: boolean;
-  }>;
+  }[];
   iconColor?: string;
   archived?: boolean;
   start?: string;

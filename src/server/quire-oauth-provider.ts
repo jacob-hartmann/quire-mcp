@@ -278,13 +278,22 @@ export class QuireProxyOAuthProvider implements OAuthServerProvider {
 
     // Persist refreshed Quire tokens to disk for stdio mode fallback
     try {
-      saveTokens({
+      const tokenData: {
+        accessToken: string;
+        refreshToken?: string;
+        expiresAt?: string;
+      } = {
         accessToken: quireTokens.access_token,
-        refreshToken: quireTokens.refresh_token,
-        expiresAt: quireTokens.expires_in
-          ? new Date(Date.now() + quireTokens.expires_in * 1000).toISOString()
-          : undefined,
-      });
+      };
+      if (quireTokens.refresh_token !== undefined) {
+        tokenData.refreshToken = quireTokens.refresh_token;
+      }
+      if (quireTokens.expires_in !== undefined) {
+        tokenData.expiresAt = new Date(
+          Date.now() + quireTokens.expires_in * 1000
+        ).toISOString();
+      }
+      saveTokens(tokenData);
     } catch (err) {
       console.error(
         "[quire-mcp] Failed to persist refreshed tokens to disk:",
@@ -444,13 +453,22 @@ export async function handleQuireOAuthCallback(
 
   // Persist Quire tokens to disk for stdio mode fallback (e.g., completions)
   try {
-    saveTokens({
+    const tokenData: {
+      accessToken: string;
+      refreshToken?: string;
+      expiresAt?: string;
+    } = {
       accessToken: quireTokens.access_token,
-      refreshToken: quireTokens.refresh_token,
-      expiresAt: quireTokens.expires_in
-        ? new Date(Date.now() + quireTokens.expires_in * 1000).toISOString()
-        : undefined,
-    });
+    };
+    if (quireTokens.refresh_token !== undefined) {
+      tokenData.refreshToken = quireTokens.refresh_token;
+    }
+    if (quireTokens.expires_in !== undefined) {
+      tokenData.expiresAt = new Date(
+        Date.now() + quireTokens.expires_in * 1000
+      ).toISOString();
+    }
+    saveTokens(tokenData);
   } catch (err) {
     // Non-fatal: completions may not work but HTTP mode continues
     console.error("[quire-mcp] Failed to persist tokens to disk:", err);

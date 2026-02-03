@@ -450,7 +450,9 @@ export class QuireClient {
       queryParams.append("merge", String(options.merge));
     }
     const queryString = queryParams.toString();
-    const endpoint = queryString ? `${baseEndpoint}?${queryString}` : baseEndpoint;
+    const endpoint = queryString
+      ? `${baseEndpoint}?${queryString}`
+      : baseEndpoint;
 
     if (format === "csv") {
       // For CSV, we need to handle the response as text

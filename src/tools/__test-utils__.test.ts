@@ -286,7 +286,10 @@ describe("Test Utilities", () => {
 
       it("createStatus should return success", async () => {
         const client = createMockClient();
-        const result = await client.createStatus("proj", { name: "New" });
+        const result = await client.createStatus("proj", {
+          name: "New",
+          value: 100,
+        });
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -403,7 +406,6 @@ describe("Test Utilities", () => {
       it("sendNotification should return success", async () => {
         const client = createMockClient();
         const result = await client.sendNotification({
-          userIds: ["user"],
           message: "Test",
         });
 

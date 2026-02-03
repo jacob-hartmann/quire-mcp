@@ -29,7 +29,9 @@ export function registerChatTools(server: McpServer): void {
         ownerType: z
           .enum(["project"])
           .default("project")
-          .describe("The type of owner (currently only 'project' is supported)"),
+          .describe(
+            "The type of owner (currently only 'project' is supported)"
+          ),
         ownerId: z
           .string()
           .describe("The owner ID (e.g., 'my-project') or OID"),
@@ -176,7 +178,9 @@ export function registerChatTools(server: McpServer): void {
         ownerType: z
           .enum(["project"])
           .default("project")
-          .describe("The type of owner (currently only 'project' is supported)"),
+          .describe(
+            "The type of owner (currently only 'project' is supported)"
+          ),
         ownerId: z
           .string()
           .describe("The owner ID (e.g., 'my-project') or OID"),

@@ -121,7 +121,11 @@ export function registerCommentTools(server: McpServer): void {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ description, asUser, pinned });
+      const params = buildParams({ description, asUser, pinned }) as {
+        description: string;
+        asUser?: boolean;
+        pinned?: boolean;
+      };
 
       // Add comment by taskOid or by projectId + taskId
       let result;
@@ -308,7 +312,11 @@ export function registerCommentTools(server: McpServer): void {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ description, asUser, pinned });
+      const params = buildParams({ description, asUser, pinned }) as {
+        description: string;
+        asUser?: boolean;
+        pinned?: boolean;
+      };
 
       // Add comment by chatOid or by projectId + chatId
       let result;
