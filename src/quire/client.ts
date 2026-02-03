@@ -84,7 +84,8 @@ const INITIAL_RETRY_DELAY_MS = 1000;
  * - Project/org IDs: lowercase slugs with hyphens (e.g., "my-project")
  * - User IDs: can have underscores and mixed case (e.g., "Jacob_Hartmann")
  */
-function isOid(value: string): boolean {
+/** @internal Exported for testing */
+export function isOid(value: string): boolean {
   // Contains a dot → definitely OID (e.g., "GZ5993VFJqJsPN.g9SpFhYrU")
   if (value.includes(".")) return true;
 
@@ -121,7 +122,8 @@ function sleep(ms: number): Promise<void> {
 /**
  * Parse error response from Quire API
  */
-function parseErrorCode(
+/** @internal Exported for testing */
+export function parseErrorCode(
   status: number
 ): Pick<QuireClientError, "code" | "retryable"> {
   switch (status) {

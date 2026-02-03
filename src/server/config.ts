@@ -27,7 +27,8 @@ export interface HttpServerConfig {
 /**
  * Check if a URL is using localhost or loopback address
  */
-function isLocalhost(urlString: string): boolean {
+/** @internal Exported for testing */
+export function isLocalhost(urlString: string): boolean {
   try {
     const url = new URL(urlString);
     const hostname = url.hostname.toLowerCase();
