@@ -167,6 +167,7 @@ export interface QuireTask {
 
 /**
  * Task creation parameters
+ * @see https://quire.io/dev/api/#definition-CreateTaskBody
  */
 export interface CreateTaskParams {
   name: string;
@@ -177,8 +178,6 @@ export interface CreateTaskParams {
   start?: string;
   assignees?: string[];
   tags?: number[];
-  parentOid?: string;
-  afterOid?: string;
 }
 
 /**

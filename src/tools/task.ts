@@ -121,12 +121,16 @@ export function registerTaskTools(server: McpServer): void {
     "quire.createTask",
     {
       description:
-        "Create a new task in a project. The task name is required; " +
-        "all other fields are optional.",
+        "Create a new task in a project or as a subtask of an existing task. " +
+        "To create a root task, provide a project ID/OID. " +
+        "To create a subtask, provide a parent task OID. " +
+        "To position a task relative to another, use createTaskAfter or createTaskBefore instead.",
       inputSchema: z.object({
         projectId: z
           .string()
-          .describe("The project ID (e.g., 'my-project') or OID"),
+          .describe(
+            "The project ID/OID to create a root task, OR a parent task OID to create a subtask"
+          ),
         name: z.string().describe("The task name/title (required)"),
         description: z
           .string()
@@ -154,14 +158,6 @@ export function registerTaskTools(server: McpServer): void {
           .optional()
           .describe("Array of user IDs to assign to this task"),
         tags: z.array(z.number()).optional().describe("Array of tag IDs"),
-        parentOid: z
-          .string()
-          .optional()
-          .describe("OID of parent task to create this as a subtask"),
-        afterOid: z
-          .string()
-          .optional()
-          .describe("OID of task to insert this task after"),
       }),
     },
     async (
@@ -175,8 +171,6 @@ export function registerTaskTools(server: McpServer): void {
         start,
         assignees,
         tags,
-        parentOid,
-        afterOid,
       },
       extra
     ) => {
@@ -194,8 +188,6 @@ export function registerTaskTools(server: McpServer): void {
         start,
         assignees,
         tags,
-        parentOid,
-        afterOid,
       });
 
       const result = await clientResult.client.createTask(
