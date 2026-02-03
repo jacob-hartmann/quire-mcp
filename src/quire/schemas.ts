@@ -219,6 +219,14 @@ export const QuireCommentSchema = z.object({
   pinAt: z.string().optional(),
   pinBy: QuireSimpleUserSchema.optional(),
   url: z.string().optional(),
+  owner: z
+    .object({
+      type: z.string(),
+      url: z.string().optional(),
+      name: z.string(),
+      oid: z.string(),
+    })
+    .optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -262,9 +270,34 @@ export const QuireDocumentSchema = z.object({
   id: z.string(),
   name: z.string(),
   nameText: z.string().optional(),
+  nameHtml: z.string().optional(),
   description: z.string().optional(),
   descriptionText: z.string().optional(),
+  descriptionHtml: z.string().optional(),
+  iconColor: z.string().optional(),
+  image: z.string().optional(),
   url: z.string().optional(),
+  partner: z
+    .object({
+      color: z.string().optional(),
+      name: z.string(),
+      oid: z.string(),
+    })
+    .optional(),
+  archivedAt: z.string().optional(),
+  start: z.string().optional(),
+  due: z.string().optional(),
+  owner: z
+    .object({
+      type: z.string(),
+      url: z.string().optional(),
+      id: z.string().optional(),
+      iconColor: z.string().optional(),
+      image: z.string().optional(),
+      name: z.string(),
+      oid: z.string(),
+    })
+    .optional(),
   createdAt: z.string().optional(),
   createdBy: QuireSimpleUserSchema.optional(),
 });
@@ -286,11 +319,29 @@ export const QuireSublistSchema = z.object({
   image: z.string().optional(),
   url: z.string().optional(),
   taskCount: z.number().optional(),
-  createdAt: z.string().optional(),
-  createdBy: QuireSimpleUserSchema.optional(),
+  partner: z
+    .object({
+      color: z.string().optional(),
+      name: z.string(),
+      oid: z.string(),
+    })
+    .optional(),
   archivedAt: z.string().optional(),
   start: z.string().optional(),
   due: z.string().optional(),
+  owner: z
+    .object({
+      type: z.string(),
+      url: z.string().optional(),
+      id: z.string().optional(),
+      iconColor: z.string().optional(),
+      image: z.string().optional(),
+      name: z.string(),
+      oid: z.string(),
+    })
+    .optional(),
+  createdAt: z.string().optional(),
+  createdBy: QuireSimpleUserSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -310,11 +361,29 @@ export const QuireChatSchema = z.object({
   image: z.string().optional(),
   url: z.string().optional(),
   messageCount: z.number().optional(),
-  createdAt: z.string().optional(),
-  members: z.array(QuireSimpleUserSchema).optional(),
+  partner: z
+    .object({
+      color: z.string().optional(),
+      name: z.string(),
+      oid: z.string(),
+    })
+    .optional(),
   archivedAt: z.string().optional(),
   start: z.string().optional(),
   due: z.string().optional(),
+  owner: z
+    .object({
+      type: z.string(),
+      url: z.string().optional(),
+      id: z.string().optional(),
+      iconColor: z.string().optional(),
+      image: z.string().optional(),
+      name: z.string(),
+      oid: z.string(),
+    })
+    .optional(),
+  createdAt: z.string().optional(),
+  createdBy: QuireSimpleUserSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------

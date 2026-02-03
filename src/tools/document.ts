@@ -27,30 +27,83 @@ export function registerDocumentTools(server: McpServer): void {
       description: "Create a new document in an organization or project.",
       inputSchema: z.object({
         ownerType: z
-          .enum(["organization", "project"])
-          .describe("The type of owner: 'organization' or 'project'"),
+          .enum(["organization", "project", "folder", "smart-folder"])
+          .describe(
+            "The type of owner: 'organization', 'project', 'folder', or 'smart-folder'"
+          ),
         ownerId: z
           .string()
           .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
         name: z.string().describe("The document name/title"),
+        id: z
+          .string()
+          .optional()
+          .describe(
+            "Custom ID for this document. If omitted, Quire generates one automatically. Must be unique within the project."
+          ),
         description: z
           .string()
           .optional()
           .describe("The document content in markdown format"),
+        iconColor: z
+          .string()
+          .optional()
+          .describe("Icon color index from Quire's predefined palette"),
+        image: z
+          .string()
+          .optional()
+          .describe(
+            "Icon image identifier (e.g., 'icon-view-list', 'icon-briefcase-o', etc.)"
+          ),
+        partner: z
+          .string()
+          .optional()
+          .describe("OID of the external team this document belongs to"),
+        start: z
+          .string()
+          .optional()
+          .describe("Target start date (ISO 8601 format, e.g., '2024-01-02')"),
+        due: z
+          .string()
+          .optional()
+          .describe("Target due date (ISO 8601 format, e.g., '2024-05-25')"),
       }),
     },
-    async ({ ownerType, ownerId, name, description }, extra) => {
+    async (
+      {
+        ownerType,
+        ownerId,
+        name,
+        id,
+        description,
+        iconColor,
+        image,
+        partner,
+        start,
+        due,
+      },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, description });
+      const params = buildParams({
+        name,
+        id,
+        description,
+        iconColor,
+        image,
+        partner,
+        start,
+        due,
+      });
 
       const result = await clientResult.client.createDocument(
-        ownerType,
+        ownerType as "organization" | "project",
         ownerId,
-        params as { name: string; description?: string }
+        params as { name: string }
       );
       if (!result.success) {
         return formatError(result.error, "document");
@@ -74,7 +127,7 @@ export function registerDocumentTools(server: McpServer): void {
             "The document OID (unique identifier). Use this OR ownerType+ownerId+documentId"
           ),
         ownerType: z
-          .enum(["organization", "project"])
+          .enum(["organization", "project", "folder", "smart-folder"])
           .optional()
           .describe("The type of owner (required when using documentId)"),
         ownerId: z
@@ -102,7 +155,7 @@ export function registerDocumentTools(server: McpServer): void {
         result = await clientResult.client.getDocument(oid);
       } else if (ownerType && ownerId && documentId) {
         result = await clientResult.client.getDocument(
-          ownerType,
+          ownerType as "organization" | "project",
           ownerId,
           documentId
         );
@@ -124,11 +177,14 @@ export function registerDocumentTools(server: McpServer): void {
   server.registerTool(
     "quire.listDocuments",
     {
-      description: "List all documents in an organization or project.",
+      description:
+        "List all documents in an organization, project, folder, or smart-folder.",
       inputSchema: z.object({
         ownerType: z
-          .enum(["organization", "project"])
-          .describe("The type of owner: 'organization' or 'project'"),
+          .enum(["organization", "project", "folder", "smart-folder"])
+          .describe(
+            "The type of owner: 'organization', 'project', 'folder', or 'smart-folder'"
+          ),
         ownerId: z
           .string()
           .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
@@ -144,7 +200,7 @@ export function registerDocumentTools(server: McpServer): void {
       }
 
       const result = await clientResult.client.listDocuments(
-        ownerType,
+        ownerType as "organization" | "project",
         ownerId
       );
       if (!result.success) {
@@ -160,7 +216,7 @@ export function registerDocumentTools(server: McpServer): void {
     "quire.updateDocument",
     {
       description:
-        "Update a document's name or description by OID, or by owner type/ID and document ID.",
+        "Update a document's properties by OID, or by owner type/ID and document ID.",
       inputSchema: z.object({
         oid: z
           .string()
@@ -169,7 +225,7 @@ export function registerDocumentTools(server: McpServer): void {
             "The document OID (unique identifier). Use this OR ownerType+ownerId+documentId"
           ),
         ownerType: z
-          .enum(["organization", "project"])
+          .enum(["organization", "project", "folder", "smart-folder"])
           .optional()
           .describe("The type of owner (required when using documentId)"),
         ownerId: z
@@ -181,22 +237,75 @@ export function registerDocumentTools(server: McpServer): void {
           .optional()
           .describe("The document ID within the owner"),
         name: z.string().optional().describe("New document name/title"),
+        id: z
+          .string()
+          .optional()
+          .describe("New ID for this document"),
         description: z
           .string()
           .optional()
           .describe("New document content in markdown format"),
+        iconColor: z
+          .string()
+          .optional()
+          .describe("Icon color index from Quire's predefined palette"),
+        archived: z
+          .boolean()
+          .optional()
+          .describe(
+            "Archive toggle. Specify true to archive; false to unarchive"
+          ),
+        start: z
+          .string()
+          .optional()
+          .describe("Target start date (ISO 8601 format, e.g., '2024-01-02')"),
+        due: z
+          .string()
+          .optional()
+          .describe("Target due date (ISO 8601 format, e.g., '2024-05-25')"),
+        image: z
+          .string()
+          .optional()
+          .describe(
+            "Icon image identifier (e.g., 'icon-view-list', 'icon-briefcase-o', etc.)"
+          ),
       }),
       annotations: {
         idempotentHint: true,
       },
     },
-    async ({ oid, ownerType, ownerId, documentId, name, description }, extra) => {
+    async (
+      {
+        oid,
+        ownerType,
+        ownerId,
+        documentId,
+        name,
+        id,
+        description,
+        iconColor,
+        archived,
+        start,
+        due,
+        image,
+      },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, description });
+      const params = buildParams({
+        name,
+        id,
+        description,
+        iconColor,
+        archived,
+        start,
+        due,
+        image,
+      });
 
       // Update document by OID or by ownerType + ownerId + documentId
       let result;
@@ -204,7 +313,7 @@ export function registerDocumentTools(server: McpServer): void {
         result = await clientResult.client.updateDocument(oid, params);
       } else if (ownerType && ownerId && documentId) {
         result = await clientResult.client.updateDocument(
-          ownerType,
+          ownerType as "organization" | "project",
           ownerId,
           documentId,
           params
@@ -237,7 +346,7 @@ export function registerDocumentTools(server: McpServer): void {
             "The document OID (unique identifier). Use this OR ownerType+ownerId+documentId"
           ),
         ownerType: z
-          .enum(["organization", "project"])
+          .enum(["organization", "project", "folder", "smart-folder"])
           .optional()
           .describe("The type of owner (required when using documentId)"),
         ownerId: z
@@ -265,7 +374,7 @@ export function registerDocumentTools(server: McpServer): void {
         result = await clientResult.client.deleteDocument(oid);
       } else if (ownerType && ownerId && documentId) {
         result = await clientResult.client.deleteDocument(
-          ownerType,
+          ownerType as "organization" | "project",
           ownerId,
           documentId
         );

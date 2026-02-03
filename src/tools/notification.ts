@@ -68,13 +68,9 @@ export function registerNotificationTools(server: McpServer): void {
     "quire.sendNotification",
     {
       description:
-        "Send a notification to one or more Quire users. " +
-        "Optionally include a URL that users can click to navigate to.",
+        "Send a notification to the current authorized user. " +
+        "Optionally include a URL that the user can click to navigate to.",
       inputSchema: z.object({
-        userIds: z
-          .array(z.string())
-          .min(1)
-          .describe("Array of user IDs to send the notification to"),
         message: z.string().describe("The notification message text"),
         url: z
           .string()
@@ -82,7 +78,7 @@ export function registerNotificationTools(server: McpServer): void {
           .describe("Optional URL to include in the notification"),
       }),
     },
-    async ({ userIds, message, url }, extra) => {
+    async ({ message, url }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return {
@@ -96,8 +92,7 @@ export function registerNotificationTools(server: McpServer): void {
         };
       }
 
-      const params: { userIds: string[]; message: string; url?: string } = {
-        userIds,
+      const params: { message: string; url?: string } = {
         message,
       };
       if (url !== undefined) params.url = url;
@@ -111,7 +106,7 @@ export function registerNotificationTools(server: McpServer): void {
         content: [
           {
             type: "text" as const,
-            text: `Notification sent successfully to ${userIds.length} user(s).`,
+            text: `Notification sent successfully.`,
           },
         ],
       };

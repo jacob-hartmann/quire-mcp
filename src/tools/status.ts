@@ -94,23 +94,30 @@ export function registerStatusTools(server: McpServer): void {
           .string()
           .describe("The project ID (e.g., 'my-project') or OID"),
         name: z.string().describe("The status name (required)"),
+        value: z
+          .number()
+          .min(0)
+          .max(100)
+          .describe(
+            "Status value (0-100, required). Values >= 100 are treated as completed. Must be unique within the project."
+          ),
         color: z
           .string()
           .optional()
           .describe("Status color (hex code without #, e.g., 'ff5733')"),
       }),
     },
-    async ({ projectId, name, color }, extra) => {
+    async ({ projectId, name, value, color }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, color });
+      const params = buildParams({ name, value, color });
 
       const result = await clientResult.client.createStatus(
         projectId,
-        params as { name: string; color?: string }
+        params as { name: string; value: number; color?: string }
       );
       if (!result.success) {
         return formatError(result.error, "status");
@@ -124,7 +131,7 @@ export function registerStatusTools(server: McpServer): void {
   server.registerTool(
     "quire.updateStatus",
     {
-      description: "Update a custom status's name or color.",
+      description: "Update a custom status's name, value, or color.",
       inputSchema: z.object({
         projectId: z
           .string()
@@ -133,8 +140,16 @@ export function registerStatusTools(server: McpServer): void {
           .number()
           .min(0)
           .max(100)
-          .describe("The status value (0-100) to update"),
+          .describe("The current status value (0-100) to update"),
         name: z.string().optional().describe("New name for the status"),
+        newValue: z
+          .number()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe(
+            "New numeric status value (0-100). Must be unique within the project."
+          ),
         color: z
           .string()
           .optional()
@@ -144,13 +159,13 @@ export function registerStatusTools(server: McpServer): void {
         idempotentHint: true,
       },
     },
-    async ({ projectId, value, name, color }, extra) => {
+    async ({ projectId, value, name, newValue, color }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, color });
+      const params = buildParams({ name, value: newValue, color });
 
       const result = await clientResult.client.updateStatus(
         projectId,

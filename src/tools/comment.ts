@@ -99,24 +99,39 @@ export function registerCommentTools(server: McpServer): void {
           .optional()
           .describe("The task ID number within the project"),
         description: z.string().describe("The comment text in markdown format"),
+        asUser: z
+          .boolean()
+          .optional()
+          .describe(
+            "If true, marks this comment as created by the app. Default: false (created by the authorizing user)."
+          ),
+        pinned: z
+          .boolean()
+          .optional()
+          .describe("Whether to pin this comment. Default: false."),
       }),
     },
-    async ({ taskOid, projectId, taskId, description }, extra) => {
+    async (
+      { taskOid, projectId, taskId, description, asUser, pinned },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
+      const params = buildParams({ description, asUser, pinned });
+
       // Add comment by taskOid or by projectId + taskId
       let result;
       if (taskOid) {
-        result = await clientResult.client.addTaskComment(taskOid, {
-          description,
-        });
+        result = await clientResult.client.addTaskComment(taskOid, params);
       } else if (projectId && taskId !== undefined) {
-        result = await clientResult.client.addTaskComment(projectId, taskId, {
-          description,
-        });
+        result = await clientResult.client.addTaskComment(
+          projectId,
+          taskId,
+          params
+        );
       } else {
         return formatValidationError(
           "Must provide either 'taskOid' or both 'projectId' and 'taskId'"
@@ -135,26 +150,31 @@ export function registerCommentTools(server: McpServer): void {
   server.registerTool(
     "quire.updateComment",
     {
-      description: "Update an existing comment's text.",
+      description: "Update an existing comment's text or pin status.",
       inputSchema: z.object({
         oid: z.string().describe("The comment OID (unique identifier)"),
         description: z
           .string()
+          .optional()
           .describe("The new comment text in markdown format"),
+        pinned: z
+          .boolean()
+          .optional()
+          .describe("Whether the comment is pinned"),
       }),
       annotations: {
         idempotentHint: true,
       },
     },
-    async ({ oid, description }, extra) => {
+    async ({ oid, description, pinned }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const result = await clientResult.client.updateComment(oid, {
-        description,
-      });
+      const params = buildParams({ description, pinned });
+
+      const result = await clientResult.client.updateComment(oid, params);
       if (!result.success) {
         return formatError(result.error, "comment");
       }
@@ -266,24 +286,39 @@ export function registerCommentTools(server: McpServer): void {
           .optional()
           .describe("The chat ID within the project"),
         description: z.string().describe("The comment text in markdown format"),
+        asUser: z
+          .boolean()
+          .optional()
+          .describe(
+            "If true, marks this comment as created by the app. Default: false (created by the authorizing user)."
+          ),
+        pinned: z
+          .boolean()
+          .optional()
+          .describe("Whether to pin this comment. Default: false."),
       }),
     },
-    async ({ chatOid, projectId, chatId, description }, extra) => {
+    async (
+      { chatOid, projectId, chatId, description, asUser, pinned },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
+      const params = buildParams({ description, asUser, pinned });
+
       // Add comment by chatOid or by projectId + chatId
       let result;
       if (chatOid) {
-        result = await clientResult.client.addChatComment(chatOid, {
-          description,
-        });
+        result = await clientResult.client.addChatComment(chatOid, params);
       } else if (projectId && chatId) {
-        result = await clientResult.client.addChatComment(projectId, chatId, {
-          description,
-        });
+        result = await clientResult.client.addChatComment(
+          projectId,
+          chatId,
+          params
+        );
       } else {
         return formatValidationError(
           "Must provide either 'chatOid' or both 'projectId' and 'chatId'"

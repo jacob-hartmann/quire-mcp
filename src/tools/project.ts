@@ -25,7 +25,7 @@ export function registerProjectTools(server: McpServer): void {
     {
       description:
         "List all projects accessible to the current user. " +
-        "Optionally filter by organization.",
+        "Optionally filter by organization, archived status, or write access.",
       inputSchema: z.object({
         organizationId: z
           .string()
@@ -34,18 +34,35 @@ export function registerProjectTools(server: McpServer): void {
             "Filter projects by organization ID or OID (optional). " +
               "If not provided, returns all accessible projects."
           ),
+        archived: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether to include archived projects. By default, archived projects are excluded."
+          ),
+        addTask: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether to return only projects to which you can add tasks. Default: false."
+          ),
       }),
       annotations: {
         readOnlyHint: true,
       },
     },
-    async ({ organizationId }, extra) => {
+    async ({ organizationId, archived, addTask }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const result = await clientResult.client.listProjects(organizationId);
+      const options = buildParams({ archived, addTask });
+
+      const result = await clientResult.client.listProjects(
+        organizationId,
+        options
+      );
       if (!result.success) {
         return formatError(result.error, "project");
       }
@@ -178,12 +195,24 @@ export function registerProjectTools(server: McpServer): void {
           .enum(["json", "csv"])
           .default("json")
           .describe("Export format: 'json' (default) or 'csv'"),
+        status: z
+          .enum(["active", "completed", "all"])
+          .optional()
+          .describe(
+            "Task status filter: 'active' for active tasks, 'completed' for completed tasks, or 'all' for all tasks. Default: 'all'."
+          ),
+        merge: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether to merge multiple values of the same header into one column (CSV only). Default: false."
+          ),
       }),
       annotations: {
         readOnlyHint: true,
       },
     },
-    async ({ id, format }, extra) => {
+    async ({ id, format, status, merge }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
@@ -214,7 +243,13 @@ export function registerProjectTools(server: McpServer): void {
       // Send initial progress
       await sendProgress(0, 100, "Starting project export...");
 
-      const result = await clientResult.client.exportProject(id, format);
+      const options = buildParams({ status, merge });
+
+      const result = await clientResult.client.exportProject(
+        id,
+        format,
+        options
+      );
 
       // Send completion progress
       await sendProgress(100, 100, "Export complete");

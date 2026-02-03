@@ -309,10 +309,17 @@ export interface QuireComment {
   pinAt?: string;
   pinBy?: QuireSimpleUser;
   url?: string;
+  owner?: {
+    type: string;
+    url?: string;
+    name: string;
+    oid: string;
+  };
 }
 
 /**
  * Comment creation parameters
+ * @see https://quire.io/dev/api/#definition-CreateCommentBody
  */
 export interface CreateCommentParams {
   description: string;
@@ -345,17 +352,21 @@ export interface QuireStatus {
 
 /**
  * Status creation parameters
+ * @see https://quire.io/dev/api/#definition-CreateStatusBody
  */
 export interface CreateStatusParams {
   name: string;
+  value: number;
   color?: string;
 }
 
 /**
  * Status update parameters
+ * @see https://quire.io/dev/api/#definition-UpdateStatusBody
  */
 export interface UpdateStatusParams {
   name?: string;
+  value?: number;
   color?: string;
 }
 
@@ -386,27 +397,62 @@ export interface QuireDocument {
   id: string;
   name: string;
   nameText?: string;
+  nameHtml?: string;
   description?: string;
   descriptionText?: string;
+  descriptionHtml?: string;
+  iconColor?: string;
+  image?: string;
   url?: string;
+  partner?: {
+    color?: string;
+    name: string;
+    oid: string;
+  };
+  archivedAt?: string;
+  start?: string;
+  due?: string;
+  owner?: {
+    type: string;
+    url?: string;
+    id?: string;
+    iconColor?: string;
+    image?: string;
+    name: string;
+    oid: string;
+  };
   createdAt?: string;
   createdBy?: QuireSimpleUser;
 }
 
 /**
  * Document creation parameters
+ * @see https://quire.io/dev/api/#definition-CreateDocBody
  */
 export interface CreateDocumentParams {
   name: string;
+  id?: string;
   description?: string;
+  iconColor?: string;
+  image?: string;
+  partner?: string;
+  start?: string;
+  due?: string;
 }
 
 /**
  * Document update parameters
+ * @see https://quire.io/dev/api/#definition-UpdateDocBody
  */
 export interface UpdateDocumentParams {
   name?: string;
+  id?: string;
   description?: string;
+  iconColor?: string;
+  archived?: boolean;
+  start?: string;
+  due?: string;
+  image?: string;
 }
 
 // =====================
@@ -430,27 +476,61 @@ export interface QuireSublist {
   image?: string;
   url?: string;
   taskCount?: number;
+  partner?: {
+    color?: string;
+    name: string;
+    oid: string;
+  };
+  archivedAt?: string;
+  start?: string;
+  due?: string;
+  owner?: {
+    type: string;
+    url?: string;
+    id?: string;
+    iconColor?: string;
+    image?: string;
+    name: string;
+    oid: string;
+  };
   createdAt?: string;
   createdBy?: QuireSimpleUser;
-  archivedAt?: string;
+}
+
+/**
+ * Sublist creation parameters
+ * @see https://quire.io/dev/api/#definition-CreateSublistBody
+ */
+export interface CreateSublistParams {
+  name: string;
+  id?: string;
+  description?: string;
+  includes?: string[];
+  iconColor?: string;
+  image?: string;
+  partner?: string;
   start?: string;
   due?: string;
 }
 
 /**
- * Sublist creation parameters
- */
-export interface CreateSublistParams {
-  name: string;
-  description?: string;
-}
-
-/**
  * Sublist update parameters
+ * @see https://quire.io/dev/api/#definition-UpdateSublistBody
  */
 export interface UpdateSublistParams {
   name?: string;
+  id?: string;
   description?: string;
+  changes?: Array<{
+    task: string;
+    exclude: boolean;
+    single: boolean;
+  }>;
+  iconColor?: string;
+  archived?: boolean;
+  start?: string;
+  due?: string;
+  image?: string;
 }
 
 // =====================
@@ -474,31 +554,55 @@ export interface QuireChat {
   image?: string;
   url?: string;
   messageCount?: number;
-  createdAt?: string;
-  members?: QuireSimpleUser[];
+  partner?: {
+    color?: string;
+    name: string;
+    oid: string;
+  };
   archivedAt?: string;
+  start?: string;
+  due?: string;
+  owner?: {
+    type: string;
+    url?: string;
+    id?: string;
+    iconColor?: string;
+    image?: string;
+    name: string;
+    oid: string;
+  };
+  createdAt?: string;
+  createdBy?: QuireSimpleUser;
+}
+
+/**
+ * Chat channel creation parameters
+ * @see https://quire.io/dev/api/#definition-CreateChatBody
+ */
+export interface CreateChatParams {
+  name: string;
+  id?: string;
+  description?: string;
+  iconColor?: string;
+  image?: string;
+  partner?: string;
   start?: string;
   due?: string;
 }
 
 /**
- * Chat channel creation parameters
- */
-export interface CreateChatParams {
-  name: string;
-  description?: string;
-  members?: string[];
-}
-
-/**
  * Chat channel update parameters
+ * @see https://quire.io/dev/api/#definition-UpdateChatBody
  */
 export interface UpdateChatParams {
   name?: string;
+  id?: string;
   description?: string;
-  members?: string[];
-  addMembers?: string[];
-  removeMembers?: string[];
+  iconColor?: string;
+  archived?: boolean;
+  start?: string;
+  due?: string;
+  image?: string;
 }
 
 // =====================
@@ -527,10 +631,10 @@ export interface PutStorageParams {
 
 /**
  * Parameters for sending a notification
+ * Sends notification to the current authorized user only
  * @see https://quire.io/dev/api/#notification
  */
 export interface SendNotificationParams {
-  userIds: string[];
   message: string;
   url?: string;
 }

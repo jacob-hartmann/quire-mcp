@@ -366,17 +366,28 @@ export class QuireClient {
    * @see https://quire.io/dev/api/#project
    */
   async listProjects(
-    organizationId?: string
+    organizationId?: string,
+    options?: { archived?: boolean; addTask?: boolean }
   ): Promise<QuireResult<QuireProject[]>> {
+    const queryParams = new URLSearchParams();
+    if (options?.archived !== undefined) {
+      queryParams.append("archived", String(options.archived));
+    }
+    if (options?.addTask !== undefined) {
+      queryParams.append("add-task", String(options.addTask));
+    }
+    const queryString = queryParams.toString();
+    const suffix = queryString ? `?${queryString}` : "";
+
     if (organizationId) {
       const endpoint = isOid(organizationId)
-        ? `/project/list/${organizationId}`
-        : `/project/list/id/${organizationId}`;
+        ? `/project/list/${organizationId}${suffix}`
+        : `/project/list/id/${organizationId}${suffix}`;
       return this.request<QuireProject[]>(endpoint, {
         schema: QuireProjectSchema.array(),
       });
     }
-    return this.request<QuireProject[]>("/project/list", {
+    return this.request<QuireProject[]>(`/project/list${suffix}`, {
       schema: QuireProjectSchema.array(),
     });
   }
@@ -421,12 +432,23 @@ export class QuireClient {
    */
   async exportProject(
     idOrOid: string,
-    format: "json" | "csv" = "json"
+    format: "json" | "csv" = "json",
+    options?: { status?: "active" | "completed" | "all"; merge?: boolean }
   ): Promise<QuireResult<QuireTask[] | string>> {
     const exportType = format === "csv" ? "export-csv" : "export-json";
-    const endpoint = isOid(idOrOid)
+    const baseEndpoint = isOid(idOrOid)
       ? `/project/${exportType}/${idOrOid}`
       : `/project/${exportType}/id/${idOrOid}`;
+
+    const queryParams = new URLSearchParams();
+    if (options?.status) {
+      queryParams.append("status", options.status);
+    }
+    if (options?.merge !== undefined) {
+      queryParams.append("merge", String(options.merge));
+    }
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `${baseEndpoint}?${queryString}` : baseEndpoint;
 
     if (format === "csv") {
       // For CSV, we need to handle the response as text

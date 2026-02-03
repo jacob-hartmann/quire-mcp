@@ -24,37 +24,85 @@ export function registerChatTools(server: McpServer): void {
   server.registerTool(
     "quire.createChat",
     {
-      description: "Create a new chat channel in an organization or project.",
+      description: "Create a new chat channel in a project.",
       inputSchema: z.object({
         ownerType: z
-          .enum(["organization", "project"])
-          .describe("The type of owner: 'organization' or 'project'"),
+          .enum(["project"])
+          .default("project")
+          .describe("The type of owner (currently only 'project' is supported)"),
         ownerId: z
           .string()
-          .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
+          .describe("The owner ID (e.g., 'my-project') or OID"),
         name: z.string().describe("The chat channel name"),
+        id: z
+          .string()
+          .optional()
+          .describe(
+            "Custom ID for this chat channel. If omitted, Quire generates one automatically. Must be unique within the project."
+          ),
         description: z
           .string()
           .optional()
-          .describe("The chat channel description"),
-        members: z
-          .array(z.string())
+          .describe("The chat channel description (Markdown supported)"),
+        iconColor: z
+          .string()
           .optional()
-          .describe("Array of user IDs to add as members"),
+          .describe("Icon color index from Quire's predefined palette"),
+        image: z
+          .string()
+          .optional()
+          .describe(
+            "Icon image identifier (e.g., 'icon-view-list', 'icon-briefcase-o', etc.)"
+          ),
+        partner: z
+          .string()
+          .optional()
+          .describe("OID of the external team this chat channel belongs to"),
+        start: z
+          .string()
+          .optional()
+          .describe("Target start date (ISO 8601 format, e.g., '2024-01-02')"),
+        due: z
+          .string()
+          .optional()
+          .describe("Target due date (ISO 8601 format, e.g., '2024-05-25')"),
       }),
     },
-    async ({ ownerType, ownerId, name, description, members }, extra) => {
+    async (
+      {
+        ownerType,
+        ownerId,
+        name,
+        id,
+        description,
+        iconColor,
+        image,
+        partner,
+        start,
+        due,
+      },
+      extra
+    ) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, description, members });
+      const params = buildParams({
+        name,
+        id,
+        description,
+        iconColor,
+        image,
+        partner,
+        start,
+        due,
+      });
 
       const result = await clientResult.client.createChat(
         ownerType,
         ownerId,
-        params as { name: string; description?: string; members?: string[] }
+        params as { name: string }
       );
       if (!result.success) {
         return formatError(result.error, "chat channel");
@@ -78,9 +126,11 @@ export function registerChatTools(server: McpServer): void {
             "The chat channel OID (unique identifier). Use this OR ownerType+ownerId+chatId"
           ),
         ownerType: z
-          .enum(["organization", "project"])
+          .enum(["project"])
           .optional()
-          .describe("The type of owner (required when using chatId)"),
+          .describe(
+            "The type of owner (currently only 'project' is supported, required when using chatId)"
+          ),
         ownerId: z
           .string()
           .optional()
@@ -121,14 +171,15 @@ export function registerChatTools(server: McpServer): void {
   server.registerTool(
     "quire.listChats",
     {
-      description: "List all chat channels in an organization or project.",
+      description: "List all chat channels in a project.",
       inputSchema: z.object({
         ownerType: z
-          .enum(["organization", "project"])
-          .describe("The type of owner: 'organization' or 'project'"),
+          .enum(["project"])
+          .default("project")
+          .describe("The type of owner (currently only 'project' is supported)"),
         ownerId: z
           .string()
-          .describe("The owner ID (e.g., 'my-org' or 'my-project') or OID"),
+          .describe("The owner ID (e.g., 'my-project') or OID"),
       }),
       annotations: {
         readOnlyHint: true,
@@ -154,7 +205,7 @@ export function registerChatTools(server: McpServer): void {
     "quire.updateChat",
     {
       description:
-        "Update a chat channel's name, description, or members by OID, or by owner type/ID and chat ID.",
+        "Update a chat channel's properties by OID, or by owner type/ID and chat ID.",
       inputSchema: z.object({
         oid: z
           .string()
@@ -163,31 +214,46 @@ export function registerChatTools(server: McpServer): void {
             "The chat channel OID (unique identifier). Use this OR ownerType+ownerId+chatId"
           ),
         ownerType: z
-          .enum(["organization", "project"])
+          .enum(["project"])
           .optional()
-          .describe("The type of owner (required when using chatId)"),
+          .describe(
+            "The type of owner (currently only 'project' is supported, required when using chatId)"
+          ),
         ownerId: z
           .string()
           .optional()
           .describe("The owner ID or OID (required when using chatId)"),
         chatId: z.string().optional().describe("The chat ID within the owner"),
         name: z.string().optional().describe("New chat channel name"),
+        id: z.string().optional().describe("New ID for this chat channel"),
         description: z
           .string()
           .optional()
-          .describe("New chat channel description"),
-        members: z
-          .array(z.string())
+          .describe("New chat channel description (Markdown supported)"),
+        iconColor: z
+          .string()
           .optional()
-          .describe("Replace all members with this list of user IDs"),
-        addMembers: z
-          .array(z.string())
+          .describe("Icon color index from Quire's predefined palette"),
+        archived: z
+          .boolean()
           .optional()
-          .describe("User IDs to add as members"),
-        removeMembers: z
-          .array(z.string())
+          .describe(
+            "Archive toggle. Specify true to archive; false to unarchive"
+          ),
+        start: z
+          .string()
           .optional()
-          .describe("User IDs to remove from members"),
+          .describe("Target start date (ISO 8601 format, e.g., '2024-01-02')"),
+        due: z
+          .string()
+          .optional()
+          .describe("Target due date (ISO 8601 format, e.g., '2024-05-25')"),
+        image: z
+          .string()
+          .optional()
+          .describe(
+            "Icon image identifier (e.g., 'icon-view-list', 'icon-briefcase-o', etc.)"
+          ),
       }),
       annotations: {
         idempotentHint: true,
@@ -200,10 +266,13 @@ export function registerChatTools(server: McpServer): void {
         ownerId,
         chatId,
         name,
+        id,
         description,
-        members,
-        addMembers,
-        removeMembers,
+        iconColor,
+        archived,
+        start,
+        due,
+        image,
       },
       extra
     ) => {
@@ -214,10 +283,13 @@ export function registerChatTools(server: McpServer): void {
 
       const params = buildParams({
         name,
+        id,
         description,
-        members,
-        addMembers,
-        removeMembers,
+        iconColor,
+        archived,
+        start,
+        due,
+        image,
       });
 
       // Update chat by OID or by ownerType + ownerId + chatId
@@ -259,9 +331,11 @@ export function registerChatTools(server: McpServer): void {
             "The chat channel OID (unique identifier). Use this OR ownerType+ownerId+chatId"
           ),
         ownerType: z
-          .enum(["organization", "project"])
+          .enum(["project"])
           .optional()
-          .describe("The type of owner (required when using chatId)"),
+          .describe(
+            "The type of owner (currently only 'project' is supported, required when using chatId)"
+          ),
         ownerId: z
           .string()
           .optional()
