@@ -627,7 +627,7 @@ export class QuireClient {
       tagId?: number;
     }
   ): Promise<QuireResult<QuireTask[]>> {
-    const queryParams = new URLSearchParams({ keyword });
+    const queryParams = new URLSearchParams({ text: keyword });
     if (options?.status !== undefined) {
       queryParams.set("status", options.status.toString());
     }
@@ -707,7 +707,7 @@ export class QuireClient {
       tagId?: number;
     }
   ): Promise<QuireResult<QuireTask[]>> {
-    const queryParams = new URLSearchParams({ keyword });
+    const queryParams = new URLSearchParams({ text: keyword });
     if (options?.status !== undefined) {
       queryParams.set("status", options.status.toString());
     }
@@ -743,7 +743,7 @@ export class QuireClient {
       tagId?: number;
     }
   ): Promise<QuireResult<QuireTask[]>> {
-    const queryParams = new URLSearchParams({ keyword });
+    const queryParams = new URLSearchParams({ text: keyword });
     if (options?.status !== undefined) {
       queryParams.set("status", options.status.toString());
     }

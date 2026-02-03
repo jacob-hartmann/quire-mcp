@@ -268,22 +268,31 @@ export interface QuireTag {
   id?: number;
   name: string;
   nameText?: string;
+  global?: boolean;
   color?: string;
+  project?: QuireSimpleUser;
+  createdAt?: string;
+  createdBy?: QuireSimpleUser;
 }
 
 /**
  * Tag creation parameters
+ * @see https://quire.io/dev/api/#definition-CreateTagBody
  */
 export interface CreateTagParams {
   name: string;
+  global?: boolean;
   color?: string;
 }
 
 /**
  * Tag update parameters
+ * @see https://quire.io/dev/api/#definition-UpdateTagBody
  */
 export interface UpdateTagParams {
   name?: string;
+  global?: boolean;
+  project?: string;
   color?: string;
 }
 

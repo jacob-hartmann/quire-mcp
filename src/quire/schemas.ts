@@ -199,7 +199,11 @@ export const QuireTagSchema = z.object({
   id: z.number().optional(),
   name: z.string(),
   nameText: z.string().optional(),
+  global: z.boolean().optional(),
   color: z.string().optional(),
+  project: QuireSimpleUserSchema.optional(),
+  createdAt: z.string().optional(),
+  createdBy: QuireSimpleUserSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------

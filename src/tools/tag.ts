@@ -86,25 +86,35 @@ export function registerTagTools(server: McpServer): void {
       inputSchema: z.object({
         projectId: z
           .string()
-          .describe("The project ID (e.g., 'my-project') or OID"),
+          .describe(
+            "The project ID (e.g., 'my-project') or OID. Specify '-' to add to personal tasks (My Tasks)."
+          ),
         name: z.string().describe("The tag name (required)"),
+        global: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether this tag is global (available across projects). Default: false."
+          ),
         color: z
           .string()
           .optional()
-          .describe("Tag color (hex code without #, e.g., 'ff5733')"),
+          .describe(
+            "Tag color index from Quire's predefined palette (two-digit code, e.g., '35')"
+          ),
       }),
     },
-    async ({ projectId, name, color }, extra) => {
+    async ({ projectId, name, global, color }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, color });
+      const params = buildParams({ name, global, color });
 
       const result = await clientResult.client.createTag(
         projectId,
-        params as { name: string; color?: string }
+        params as { name: string; global?: boolean; color?: string }
       );
       if (!result.success) {
         return formatError(result.error, "tag");
@@ -118,26 +128,42 @@ export function registerTagTools(server: McpServer): void {
   server.registerTool(
     "quire.updateTag",
     {
-      description: "Update a tag's name or color.",
+      description: "Update a tag's name, global status, or color.",
       inputSchema: z.object({
         oid: z.string().describe("The tag OID (unique identifier)"),
         name: z.string().optional().describe("New name for the tag"),
+        global: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether the tag is global (available across projects). " +
+              "If set to false, you must also provide 'project'."
+          ),
+        project: z
+          .string()
+          .optional()
+          .describe(
+            "Project OID that this tag is limited to. " +
+              "Used only when 'global' is explicitly set to false; ignored otherwise."
+          ),
         color: z
           .string()
           .optional()
-          .describe("New color (hex code without #, e.g., 'ff5733')"),
+          .describe(
+            "Tag color index from Quire's predefined palette (two-digit code, e.g., '35')"
+          ),
       }),
       annotations: {
         idempotentHint: true,
       },
     },
-    async ({ oid, name, color }, extra) => {
+    async ({ oid, name, global, project, color }, extra) => {
       const clientResult = await getQuireClient(extra);
       if (!clientResult.success) {
         return formatAuthError(clientResult.error);
       }
 
-      const params = buildParams({ name, color });
+      const params = buildParams({ name, global, project, color });
 
       const result = await clientResult.client.updateTag(oid, params);
       if (!result.success) {
