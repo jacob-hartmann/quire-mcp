@@ -373,7 +373,36 @@ The server provides **60+ tools** organized by category:
 
 ### Resources
 
-- `quire://user/me`: Access the current user's profile data as a resource.
+The server exposes data as MCP resources:
+
+#### Static Resources
+
+| Resource URI            | Description                              |
+| ----------------------- | ---------------------------------------- |
+| `quire://user/me`       | Current authenticated user's profile     |
+| `quire://organizations` | List of all accessible organizations     |
+| `quire://projects`      | List of all accessible projects          |
+
+#### Resource Templates
+
+| Resource URI                           | Description                          |
+| -------------------------------------- | ------------------------------------ |
+| `quire://project/{id}`                 | Specific project details and metadata |
+| `quire://project/{projectId}/tasks`    | Root tasks in a project               |
+| `quire://project/{projectId}/tags`     | Tags defined in a project             |
+| `quire://project/{projectId}/statuses` | Custom statuses in a project          |
+
+### Prompts
+
+The server provides guided prompts for common workflows:
+
+| Prompt                      | Description                                              |
+| --------------------------- | -------------------------------------------------------- |
+| `quire.create-project-plan` | Generate a task plan from a goal description             |
+| `quire.daily-standup`       | Generate a daily standup summary                         |
+| `quire.sprint-planning`     | Plan a sprint from the backlog                           |
+| `quire.task-breakdown`      | Break down a complex task into subtasks                  |
+| `quire.weekly-summary`      | Generate a weekly progress report                        |
 
 ## Development
 
