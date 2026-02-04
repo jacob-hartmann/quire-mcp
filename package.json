@@ -1,6 +1,6 @@
 {
   "name": "quire-mcp",
-  "version": "1.0.0-rc.6",
+  "version": "1.0.0",
   "description": "Model Context Protocol (MCP) server for Quire project management",
   "type": "module",
   "main": "./dist/index.js",
