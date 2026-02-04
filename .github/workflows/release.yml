@@ -36,7 +36,6 @@ jobs:
         with:
           node-version-file: ".nvmrc"
           cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
 
       - name: Verify tag matches package version
         run: |
@@ -67,20 +66,18 @@ jobs:
           upload-artifact: false
           upload-release-assets: false
 
-      - name: Publish to npm (with provenance)
+      - name: Publish to npm (Trusted Publishing / OIDC)
         run: |
           PKG_VERSION="$(node -p "require('./package.json').version")"
           case "${PKG_VERSION}" in
             *-*)
               # Avoid setting "latest" to a prerelease. Publish under a prerelease dist-tag.
-              npm publish --provenance --ignore-scripts --tag rc
+              npm publish --ignore-scripts --tag rc
               ;;
             *)
-              npm publish --provenance --ignore-scripts
+              npm publish --ignore-scripts
               ;;
           esac
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
