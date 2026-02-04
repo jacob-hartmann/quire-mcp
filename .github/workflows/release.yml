@@ -36,6 +36,10 @@ jobs:
         with:
           node-version-file: ".nvmrc"
           cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Upgrade npm for trusted publishing (requires 11.5.1+)
+        run: npm install -g npm@latest
 
       - name: Verify tag matches package version
         run: |
