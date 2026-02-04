@@ -62,7 +62,9 @@ export class QuireAuthError extends Error {
 async function verifyToken(token: string): Promise<boolean> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, FETCH_TIMEOUT_MS);
 
     const response = await fetch(`${QUIRE_API_BASE_URL}/user/id/me`, {
       method: "GET",
