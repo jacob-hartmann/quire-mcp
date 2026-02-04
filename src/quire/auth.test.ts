@@ -28,7 +28,12 @@ vi.mock("./oauth.js", () => ({
 vi.mock("./token-store.js", () => ({
   loadTokens: vi.fn(),
   saveTokens: vi.fn(),
+  clearTokens: vi.fn(),
 }));
+
+// Mock fetch for token verification
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 // Mock node:http to capture the request handler
 vi.mock("node:http", () => {
@@ -58,7 +63,7 @@ import {
   generateState,
   buildAuthorizeUrl,
 } from "./oauth.js";
-import { loadTokens, saveTokens } from "./token-store.js";
+import { loadTokens, saveTokens, clearTokens } from "./token-store.js";
 
 describe("QuireAuthError", () => {
   it("should create error with message and code", () => {
@@ -94,6 +99,8 @@ describe("getQuireAccessToken", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env = { ...originalEnv };
+    // Default: token verification succeeds
+    mockFetch.mockResolvedValue({ ok: true, status: 200 });
   });
 
   afterEach(() => {
@@ -139,6 +146,35 @@ describe("getQuireAccessToken", () => {
 
     expect(result.accessToken).toBe("cached-token");
     expect(result.source).toBe("cache");
+  });
+
+  it("should clear cache and refresh when cached token verification fails with 401", async () => {
+    delete process.env["QUIRE_ACCESS_TOKEN"];
+    vi.mocked(loadOAuthConfigFromEnv).mockReturnValue({
+      clientId: "id",
+      clientSecret: "secret",
+      redirectUri: "http://localhost:3000/callback",
+    });
+    vi.mocked(loadTokens).mockReturnValue({
+      accessToken: "invalid-cached-token",
+      refreshToken: "refresh-token",
+      expiresAt: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(isTokenExpired).mockReturnValue(false);
+    // Token verification returns 401
+    mockFetch.mockResolvedValue({ ok: false, status: 401 });
+    vi.mocked(refreshAccessToken).mockResolvedValue({
+      accessToken: "refreshed-token",
+      refreshToken: "new-refresh",
+      expiresAt: "2099-01-01T00:00:00.000Z",
+    });
+
+    const result = await getQuireAccessToken();
+
+    expect(clearTokens).toHaveBeenCalled();
+    expect(refreshAccessToken).toHaveBeenCalled();
+    expect(result.accessToken).toBe("refreshed-token");
+    expect(result.source).toBe("refresh");
   });
 
   it("should refresh token when cached token is expired", async () => {

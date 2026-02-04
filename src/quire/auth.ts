@@ -23,7 +23,8 @@ import {
   type QuireOAuthConfig,
   type QuireTokenData,
 } from "./oauth.js";
-import { loadTokens, saveTokens } from "./token-store.js";
+import { clearTokens, loadTokens, saveTokens } from "./token-store.js";
+import { QUIRE_API_BASE_URL, FETCH_TIMEOUT_MS } from "../constants.js";
 import { escapeHtml } from "../utils/html.js";
 
 // ---------------------------------------------------------------------------
@@ -47,6 +48,44 @@ export class QuireAuthError extends Error {
   ) {
     super(message);
     this.name = "QuireAuthError";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Token Verification
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify a token is valid by making a lightweight API call.
+ * Returns true if the token works, false if it's invalid/expired.
+ */
+async function verifyToken(token: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const response = await fetch(`${QUIRE_API_BASE_URL}/user/id/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    // 401 means token is invalid/expired
+    if (response.status === 401) {
+      return false;
+    }
+
+    // Any successful response means token is valid
+    return response.ok;
+  } catch {
+    // Network error, timeout, etc. - assume token might still be valid
+    // and let the actual API call handle it
+    return true;
   }
 }
 
@@ -75,10 +114,19 @@ export async function getQuireAccessToken(): Promise<AuthResult> {
     );
   }
 
-  // 3. Try cached token
+  // 3. Try cached token (verify it actually works)
   const cached = loadTokens();
   if (cached?.accessToken && !isTokenExpired(cached.expiresAt)) {
-    return { accessToken: cached.accessToken, source: "cache" };
+    console.error("[quire-mcp] Verifying cached token...");
+    const isValid = await verifyToken(cached.accessToken);
+    if (isValid) {
+      console.error("[quire-mcp] Cached token is valid.");
+      return { accessToken: cached.accessToken, source: "cache" };
+    }
+    console.error(
+      "[quire-mcp] Cached token is invalid or expired, clearing cache..."
+    );
+    clearTokens();
   }
 
   // 4. Try refresh
@@ -89,11 +137,12 @@ export async function getQuireAccessToken(): Promise<AuthResult> {
       saveTokens(refreshed);
       return { accessToken: refreshed.accessToken, source: "refresh" };
     } catch (err) {
-      // Refresh failed — fall through to interactive login
+      // Refresh failed — clear tokens and fall through to interactive login
       console.error(
         "[quire-mcp] Token refresh failed, will require interactive login:",
         err instanceof Error ? err.message : err
       );
+      clearTokens();
     }
   }
 
