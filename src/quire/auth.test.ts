@@ -716,4 +716,29 @@ describe("getQuireAccessToken", () => {
       expect(result.source).toBe("interactive");
     });
   });
+
+  describe("port validation edge cases", () => {
+    it("should throw error for port 0", async () => {
+      vi.mocked(loadOAuthConfigFromEnv).mockReturnValue({
+        clientId: "test-client",
+        clientSecret: "test-secret",
+        redirectUri: "http://localhost:0/callback",
+      });
+      vi.mocked(loadTokens).mockReturnValue(undefined);
+
+      await expect(getQuireAccessToken()).rejects.toThrow("Invalid port");
+    });
+
+    it("should throw error for negative port (caught by URL parser)", async () => {
+      vi.mocked(loadOAuthConfigFromEnv).mockReturnValue({
+        clientId: "test-client",
+        clientSecret: "test-secret",
+        redirectUri: "http://localhost:-1/callback",
+      });
+      vi.mocked(loadTokens).mockReturnValue(undefined);
+
+      // URL parser rejects invalid ports before our validation runs
+      await expect(getQuireAccessToken()).rejects.toThrow();
+    });
+  });
 });

@@ -155,6 +155,26 @@ describe("User Tools", () => {
   });
 
   describe("quire.listUsers", () => {
+    it("should return error on authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.listUsers");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool should be defined");
+
+      const result = (await tool.handler({}, createMockExtra())) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should list all users", async () => {
       const mockUsers = [
         { oid: "user1", id: "john", name: "John" },
@@ -216,6 +236,29 @@ describe("User Tools", () => {
   });
 
   describe("quire.listProjectMembers", () => {
+    it("should return error on authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.listProjectMembers");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool should be defined");
+
+      const result = (await tool.handler(
+        { projectId: "my-project" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should list project members", async () => {
       const mockMembers = [
         { oid: "user1", id: "john", name: "John" },

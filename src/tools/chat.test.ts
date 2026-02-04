@@ -158,6 +158,27 @@ describe("Chat Tools", () => {
   });
 
   describe("quire.getChat", () => {
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.getChat");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { oid: "ChatOid" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should get chat by OID", async () => {
       const mockChat = { oid: "ChatOid", id: "general", name: "General" };
       const mockClient = createMockClient({

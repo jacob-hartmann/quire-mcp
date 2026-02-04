@@ -152,7 +152,7 @@ describe("registerPrompts", () => {
       expect(message.content.text).toContain("Build a new feature");
     });
 
-    it("should return correct message structure for daily-standup", () => {
+    it("should return correct message structure for daily-standup with userId", () => {
       const mockRegisterPrompt = vi.fn();
       const mockServer = {
         registerPrompt: mockRegisterPrompt,
@@ -175,6 +175,37 @@ describe("registerPrompts", () => {
       const message = result.messages[0]!;
       expect(message.content.text).toContain("test-project");
       expect(message.content.text).toContain("john-doe");
+      expect(message.content.text).toContain("Focus on");
+      expect(message.content.text).toContain(
+        "Focus on tasks assigned to the specified user"
+      );
+    });
+
+    it("should return correct message structure for daily-standup without userId", () => {
+      const mockRegisterPrompt = vi.fn();
+      const mockServer = {
+        registerPrompt: mockRegisterPrompt,
+      } as unknown as McpServer;
+
+      registerPrompts(mockServer);
+
+      const dailyStandupCall = (
+        mockRegisterPrompt.mock.calls as RegisterPromptCall[]
+      ).find((call) => call[0] === "quire.daily-standup");
+      const handler = dailyStandupCall![2];
+
+      const result = handler({
+        projectId: "test-project",
+        // No userId provided
+      });
+
+      expect(result).toHaveProperty("messages");
+      expect(result.messages).toHaveLength(1);
+      const message = result.messages[0]!;
+      expect(message.content.text).toContain("test-project");
+      // Should NOT contain user-specific text
+      expect(message.content.text).not.toContain("Focus on:");
+      expect(message.content.text).toContain("Consider all team members");
     });
 
     it("should return correct message structure for sprint-planning", () => {

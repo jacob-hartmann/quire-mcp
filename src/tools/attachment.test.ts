@@ -229,6 +229,37 @@ describe("Attachment Tools", () => {
       expect(isErrorResponse(result)).toBe(true);
       expect(extractTextContent(result)).toContain("FORBIDDEN");
     });
+
+    it("should handle UNAUTHORIZED error", async () => {
+      const mockClient = createMockClient({
+        uploadTaskAttachment: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.unauthorized()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.uploadTaskAttachment");
+      expect(tool).toBeDefined();
+      if (!tool) throw new Error("Tool not registered");
+
+      const handlerFn = tool.handler.bind(tool);
+      const result = (await handlerFn(
+        { taskOid: "TaskOid", filename: "file.txt", content: "Hello" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain(
+        "access token is invalid or expired"
+      );
+    });
   });
 
   describe("quire.uploadCommentAttachment", () => {

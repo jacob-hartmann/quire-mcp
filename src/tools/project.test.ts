@@ -169,6 +169,28 @@ describe("Project Tools", () => {
   });
 
   describe("quire.getProject", () => {
+    it("should return error on authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.getProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { id: "my-project" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should get project by ID", async () => {
       const mockProject = {
         oid: "proj-oid",
@@ -231,6 +253,28 @@ describe("Project Tools", () => {
   });
 
   describe("quire.updateProject", () => {
+    it("should return error on authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.updateProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { id: "my-project", name: "New Name" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should update project", async () => {
       const mockProject = {
         oid: "proj-oid",
@@ -325,6 +369,28 @@ describe("Project Tools", () => {
   });
 
   describe("quire.exportProject", () => {
+    it("should return error on authentication failure", async () => {
+      const mockResult: QuireClientResult = {
+        success: false,
+        error: "No token",
+      };
+      vi.mocked(getQuireClient).mockResolvedValueOnce(mockResult);
+
+      const tool = registeredTools.get("quire.exportProject");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { id: "my-project" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should export project as JSON by default", async () => {
       const mockTasks = [
         { oid: "task1", id: 1, name: "Task 1" },

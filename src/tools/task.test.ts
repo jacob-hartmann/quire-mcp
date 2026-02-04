@@ -185,6 +185,27 @@ describe("Task Tools", () => {
   });
 
   describe("quire.getTask", () => {
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.getTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { oid: "TaskOid" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should get task by OID", async () => {
       const mockTask = { oid: "TaskOid", id: 1, name: "Task 1" };
       const mockClient = createMockClient({
@@ -297,6 +318,27 @@ describe("Task Tools", () => {
   });
 
   describe("quire.createTask", () => {
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.createTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { projectId: "my-project", name: "New Task" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should create task with minimal params", async () => {
       const mockTask = { oid: "NewTask", id: 1, name: "New Task" };
       const mockClient = createMockClient({
@@ -398,6 +440,52 @@ describe("Task Tools", () => {
   });
 
   describe("quire.updateTask", () => {
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.updateTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { oid: "TaskOid", name: "Updated" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return error on API failure", async () => {
+      const mockClient = createMockClient({
+        updateTask: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.updateTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { oid: "NonExistentTask", name: "Updated" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("NOT_FOUND");
+    });
+
     it("should update task by OID", async () => {
       const mockClient = createMockClient({
         updateTask: vi.fn().mockResolvedValueOnce({
@@ -528,6 +616,27 @@ describe("Task Tools", () => {
   });
 
   describe("quire.deleteTask", () => {
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.deleteTask");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { oid: "TaskOid" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
     it("should delete task by OID", async () => {
       const mockClient = createMockClient({
         deleteTask: vi.fn().mockResolvedValueOnce({
@@ -655,6 +764,52 @@ describe("Task Tools", () => {
         }
       );
     });
+
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.searchTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { projectId: "my-project", keyword: "bug" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return error on API failure", async () => {
+      const mockClient = createMockClient({
+        searchTasks: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.searchTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { projectId: "nonexistent", keyword: "bug" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("NOT_FOUND");
+    });
   });
 
   describe("quire.createTaskAfter", () => {
@@ -731,6 +886,52 @@ describe("Task Tools", () => {
         tags: [1, 2],
       });
     });
+
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.createTaskAfter");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { taskOid: "ExistingTaskOid", name: "After Task" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return error on API failure", async () => {
+      const mockClient = createMockClient({
+        createTaskAfter: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.createTaskAfter");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { taskOid: "InvalidOid", name: "After Task" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("NOT_FOUND");
+    });
   });
 
   describe("quire.createTaskBefore", () => {
@@ -763,6 +964,52 @@ describe("Task Tools", () => {
         "ExistingTaskOid",
         { name: "Before Task" }
       );
+    });
+
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.createTaskBefore");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { taskOid: "ExistingTaskOid", name: "Before Task" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return error on API failure", async () => {
+      const mockClient = createMockClient({
+        createTaskBefore: vi.fn().mockResolvedValueOnce(mockErrors.forbidden()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.createTaskBefore");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { taskOid: "TaskOid", name: "Before Task" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("FORBIDDEN");
     });
   });
 
@@ -834,6 +1081,52 @@ describe("Task Tools", () => {
         }
       );
     });
+
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.searchFolderTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { folderId: "my-folder", keyword: "bug" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return error on API failure", async () => {
+      const mockClient = createMockClient({
+        searchFolderTasks: vi.fn().mockResolvedValueOnce(mockErrors.notFound()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.searchFolderTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { folderId: "my-folder", keyword: "bug" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("NOT_FOUND");
+    });
   });
 
   describe("quire.searchOrganizationTasks", () => {
@@ -903,6 +1196,54 @@ describe("Task Tools", () => {
           tagId: 3,
         }
       );
+    });
+
+    it("should return error on authentication failure", async () => {
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: false,
+        error: "No token",
+      });
+
+      const tool = registeredTools.get("quire.searchOrganizationTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { organizationId: "my-org", keyword: "urgent" },
+        createMockExtra()
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("Authentication Error");
+    });
+
+    it("should return error on API failure", async () => {
+      const mockClient = createMockClient({
+        searchOrganizationTasks: vi
+          .fn()
+          .mockResolvedValueOnce(mockErrors.serverError()),
+      });
+
+      vi.mocked(getQuireClient).mockResolvedValueOnce({
+        success: true,
+        client: mockClient,
+      });
+
+      const tool = registeredTools.get("quire.searchOrganizationTasks");
+      expect(tool).toBeDefined();
+      if (!tool) return;
+      const result = (await tool.handler(
+        { organizationId: "my-org", keyword: "urgent" },
+        createMockExtra({ quireToken: "token" })
+      )) as {
+        isError?: boolean;
+        content: { type: string; text?: string }[];
+      };
+
+      expect(isErrorResponse(result)).toBe(true);
+      expect(extractTextContent(result)).toContain("SERVER_ERROR");
     });
   });
 });

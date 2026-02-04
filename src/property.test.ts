@@ -539,9 +539,15 @@ describe("buildParams (property-based)", () => {
   });
 
   it("preserves null values", () => {
+    // Reserved property names that can't be used as normal object keys
+    const reservedKeys = ["__proto__", "constructor", "prototype"];
     fc.assert(
       fc.property(fc.string(), (key) => {
-        fc.pre(key.length > 0 && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key));
+        fc.pre(
+          key.length > 0 &&
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key) &&
+            !reservedKeys.includes(key)
+        );
         const input = { [key]: null };
         const result = buildParams(input);
         expect(result[key]).toBeNull();
