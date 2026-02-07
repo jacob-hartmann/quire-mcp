@@ -55,7 +55,7 @@ body:
     attributes:
       label: Package version
       description: What version of quire-mcp are you using?
-      placeholder: "e.g., 1.0.1 (check with: npm list quire-mcp)"
+      placeholder: "e.g., 1.0.1 (check with: pnpm list quire-mcp)"
     validations:
       required: true
 
