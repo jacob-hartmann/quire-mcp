@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security Vulnerability
+    url: mailto:foss@jacobhartmann.me
+    about: Please report security vulnerabilities via email. Do not create public issues for security concerns.
+  - name: ❓ Support & Questions
+    url: https://github.com/jacob-hartmann/quire-mcp/blob/main/SUPPORT.md
+    about: Read our support guidelines before opening an issue. Check the README, existing issues, Quire API docs, and MCP documentation first.
+  - name: 📖 Quire API Documentation
+    url: https://quire.io/dev/api/
+    about: Official Quire API documentation for understanding Quire-specific behavior.
+  - name: 🔌 MCP Protocol Documentation
+    url: https://modelcontextprotocol.io/
+    about: Model Context Protocol documentation for protocol-level questions.

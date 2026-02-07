@@ -86,13 +86,24 @@ pnpm format
 3. **Logging**: All logging must go to `stderr` (using `console.error`). `stdout` is reserved for the MCP protocol JSON-RPC messages.
 4. **Commits**: Write clear, descriptive commit messages.
 
+## Opening Issues
+
+When opening an issue, please use one of the provided issue templates:
+
+- **Bug Report**: For reporting bugs or unexpected behavior
+- **Feature Request**: For suggesting new features or enhancements
+- **Question**: For asking questions about usage
+
+These templates help ensure you provide all the necessary information for us to understand and address your issue effectively.
+
 ## Pull Request Process
 
 1. Fork the repository and create your branch from `main`.
 2. Implement your changes.
 3. Add tests for any new functionality.
 4. Run `pnpm check` to ensure all quality checks pass.
-5. Submit a Pull Request.
+5. Update `CHANGELOG.md` if your changes are user-facing (see [RELEASING.md](./RELEASING.md) for guidance).
+6. Submit a Pull Request using the provided template.
 
 ## License
 
