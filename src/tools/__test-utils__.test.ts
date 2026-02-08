@@ -425,6 +425,306 @@ describe("Test Utilities", () => {
           expect(result.data.name).toBe("test-file.txt");
         }
       });
+
+      it("uploadCommentAttachment should return success", async () => {
+        const client = createMockClient();
+        const result = await client.uploadCommentAttachment(
+          "comment-oid",
+          "file.txt",
+          "data"
+        );
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("test-file.txt");
+        }
+      });
+
+      it("updateTag should return success", async () => {
+        const client = createMockClient();
+        const result = await client.updateTag("tag-oid", { name: "Updated" });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Updated Tag");
+        }
+      });
+
+      it("deleteTag should return success", async () => {
+        const client = createMockClient();
+        const result = await client.deleteTag("tag-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.oid).toBe("tag-oid");
+        }
+      });
+
+      it("updateComment should return success", async () => {
+        const client = createMockClient();
+        const result = await client.updateComment("comment-oid", {
+          description: "Updated",
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.description).toBe("Updated comment");
+        }
+      });
+
+      it("deleteComment should return success", async () => {
+        const client = createMockClient();
+        const result = await client.deleteComment("comment-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.oid).toBe("comment-oid");
+        }
+      });
+
+      it("listChatComments should return empty array", async () => {
+        const client = createMockClient();
+        const result = await client.listChatComments("chat-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data).toEqual([]);
+        }
+      });
+
+      it("addChatComment should return success", async () => {
+        const client = createMockClient();
+        const result = await client.addChatComment("chat-oid", {
+          description: "Chat comment",
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.oid).toBe("chat-comment-oid");
+        }
+      });
+
+      it("updateStatus should return success", async () => {
+        const client = createMockClient();
+        const result = await client.updateStatus("proj", 100, {
+          name: "Updated",
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Updated Status");
+        }
+      });
+
+      it("deleteStatus should return success", async () => {
+        const client = createMockClient();
+        const result = await client.deleteStatus("proj", 100);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.value).toBe(100);
+        }
+      });
+
+      it("listProjectMembers should return empty array", async () => {
+        const client = createMockClient();
+        const result = await client.listProjectMembers("proj");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data).toEqual([]);
+        }
+      });
+
+      it("updateProject should return success", async () => {
+        const client = createMockClient();
+        const result = await client.updateProject("proj", {});
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Test Project");
+        }
+      });
+
+      it("exportProject should return success", async () => {
+        const client = createMockClient();
+        const result = await client.exportProject("proj");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data).toEqual([]);
+        }
+      });
+
+      it("updateOrganization should return success", async () => {
+        const client = createMockClient();
+        const result = await client.updateOrganization("org", {});
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Test Org");
+        }
+      });
+
+      it("createTaskAfter should return success", async () => {
+        const client = createMockClient();
+        const result = await client.createTaskAfter("task-oid", {
+          name: "After Task",
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("After Task");
+        }
+      });
+
+      it("createTaskBefore should return success", async () => {
+        const client = createMockClient();
+        const result = await client.createTaskBefore("task-oid", {
+          name: "Before Task",
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Before Task");
+        }
+      });
+
+      it("searchFolderTasks should return empty array", async () => {
+        const client = createMockClient();
+        const result = await client.searchFolderTasks("folder-oid", "test");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data).toEqual([]);
+        }
+      });
+
+      it("searchOrganizationTasks should return empty array", async () => {
+        const client = createMockClient();
+        const result = await client.searchOrganizationTasks("org-oid", "test");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data).toEqual([]);
+        }
+      });
+
+      it("getDocument should return success", async () => {
+        const client = createMockClient();
+        const result = await client.getDocument("doc-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Test Doc");
+        }
+      });
+
+      it("updateDocument should return success", async () => {
+        const client = createMockClient();
+        const result = await client.updateDocument("doc-oid", {
+          name: "Updated",
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Updated Doc");
+        }
+      });
+
+      it("deleteDocument should return success", async () => {
+        const client = createMockClient();
+        const result = await client.deleteDocument("doc-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.oid).toBe("doc-oid");
+        }
+      });
+
+      it("getSublist should return success", async () => {
+        const client = createMockClient();
+        const result = await client.getSublist("sublist-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Test Sublist");
+        }
+      });
+
+      it("updateSublist should return success", async () => {
+        const client = createMockClient();
+        const result = await client.updateSublist("sublist-oid", {
+          name: "Updated",
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Updated Sublist");
+        }
+      });
+
+      it("deleteSublist should return success", async () => {
+        const client = createMockClient();
+        const result = await client.deleteSublist("sublist-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.oid).toBe("sublist-oid");
+        }
+      });
+
+      it("getChat should return success", async () => {
+        const client = createMockClient();
+        const result = await client.getChat("chat-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Test Chat");
+        }
+      });
+
+      it("updateChat should return success", async () => {
+        const client = createMockClient();
+        const result = await client.updateChat("chat-oid", {
+          name: "Updated",
+        });
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("Updated Chat");
+        }
+      });
+
+      it("deleteChat should return success", async () => {
+        const client = createMockClient();
+        const result = await client.deleteChat("chat-oid");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.oid).toBe("chat-oid");
+        }
+      });
+
+      it("putStorageValue should return success", async () => {
+        const client = createMockClient();
+        const result = await client.putStorageValue("key", "value");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.value).toBe("new-value");
+        }
+      });
+
+      it("deleteStorageValue should return success", async () => {
+        const client = createMockClient();
+        const result = await client.deleteStorageValue("key");
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.name).toBe("test-key");
+        }
+      });
     });
   });
 

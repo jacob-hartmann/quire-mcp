@@ -21,6 +21,7 @@ export function createMockExtra(options?: { quireToken?: string }): MockExtra {
   const extra: MockExtra = {
     signal: new AbortController().signal,
     requestId: "test-request-id",
+    /* v8 ignore next 2 -- default stubs, never invoked in tool tests */
     sendNotification: () => Promise.resolve(),
     sendRequest: () => Promise.resolve({} as never),
   };

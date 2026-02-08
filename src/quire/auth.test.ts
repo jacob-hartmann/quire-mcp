@@ -704,6 +704,100 @@ describe("getQuireAccessToken", () => {
     });
   });
 
+  describe("verifyToken edge cases", () => {
+    it("should use cached token when verifyToken throws a network error", async () => {
+      delete process.env["QUIRE_ACCESS_TOKEN"];
+      vi.mocked(loadOAuthConfigFromEnv).mockReturnValue({
+        clientId: "id",
+        clientSecret: "secret",
+        redirectUri: "http://localhost:3000/callback",
+      });
+      vi.mocked(loadTokens).mockReturnValue({
+        accessToken: "cached-token",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      });
+      vi.mocked(isTokenExpired).mockReturnValue(false);
+      // Simulate a network error during verification
+      mockFetch.mockRejectedValue(new Error("Network unreachable"));
+
+      const result = await getQuireAccessToken();
+
+      // Network error in verifyToken returns true (assume valid),
+      // so the cached token should be used
+      expect(result.accessToken).toBe("cached-token");
+      expect(result.source).toBe("cache");
+    });
+
+    it("should use cached token when verifyToken fetch is aborted", async () => {
+      delete process.env["QUIRE_ACCESS_TOKEN"];
+      vi.mocked(loadOAuthConfigFromEnv).mockReturnValue({
+        clientId: "id",
+        clientSecret: "secret",
+        redirectUri: "http://localhost:3000/callback",
+      });
+      vi.mocked(loadTokens).mockReturnValue({
+        accessToken: "cached-token",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+      });
+      vi.mocked(isTokenExpired).mockReturnValue(false);
+      // Simulate an abort error
+      const abortError = new Error("Aborted");
+      abortError.name = "AbortError";
+      mockFetch.mockRejectedValue(abortError);
+
+      const result = await getQuireAccessToken();
+
+      expect(result.accessToken).toBe("cached-token");
+      expect(result.source).toBe("cache");
+    });
+  });
+
+  describe("callback server catch block", () => {
+    it("should handle error when res.writeHead throws during success response", async () => {
+      delete process.env["QUIRE_ACCESS_TOKEN"];
+      vi.mocked(loadOAuthConfigFromEnv).mockReturnValue({
+        clientId: "test-client",
+        clientSecret: "test-secret",
+        redirectUri: "http://localhost:3000/callback",
+      });
+      vi.mocked(loadTokens).mockReturnValue(undefined);
+      vi.mocked(generateState).mockReturnValue("expected-state");
+      vi.mocked(buildAuthorizeUrl).mockReturnValue(
+        "https://quire.io/oauth/authorize?client_id=test"
+      );
+      httpRequestHandler = null;
+
+      const authPromise = getQuireAccessToken();
+
+      await vi.waitFor(() => {
+        expect(httpRequestHandler).not.toBeNull();
+      });
+
+      // Simulate a request where res.writeHead throws on the success path (line 311),
+      // entering the catch block (line 319). The catch block also calls res.writeHead
+      // (line 320), so only throw on the first call.
+      let writeHeadCallCount = 0;
+      const mockRes = {
+        writeHead: vi.fn().mockImplementation(() => {
+          writeHeadCallCount++;
+          if (writeHeadCallCount === 1) {
+            throw new Error("writeHead failed");
+          }
+        }),
+        end: vi.fn(),
+      };
+
+      httpRequestHandler!(
+        {
+          url: "/callback?code=auth-code&state=expected-state",
+        } as IncomingMessage,
+        mockRes as unknown as ServerResponse
+      );
+
+      await expect(authPromise).rejects.toThrow("writeHead failed");
+    });
+  });
+
   describe("error handling edge cases", () => {
     it("should log and fall through when refresh throws non-Error", async () => {
       delete process.env["QUIRE_ACCESS_TOKEN"];

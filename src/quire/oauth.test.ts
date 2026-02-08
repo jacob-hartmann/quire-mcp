@@ -154,6 +154,29 @@ describe("OAuth helpers", () => {
       expect(result.expiresAt).toBeDefined();
     });
 
+    it("should handle response without refresh_token or expires_in", async () => {
+      const mockResponse = {
+        access_token: "access-only",
+        token_type: "bearer",
+      };
+
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), { status: 200 })
+      );
+
+      const config = {
+        clientId: "id",
+        clientSecret: "secret",
+        redirectUri: "http://localhost:3000/callback",
+      };
+
+      const result = await exchangeCodeForToken(config, "auth-code");
+
+      expect(result.accessToken).toBe("access-only");
+      expect(result.refreshToken).toBeUndefined();
+      expect(result.expiresAt).toBeUndefined();
+    });
+
     it("should throw on HTTP error", async () => {
       vi.mocked(fetch).mockResolvedValueOnce(
         new Response("Invalid code", { status: 400 })
@@ -233,6 +256,129 @@ describe("OAuth helpers", () => {
       await expect(
         refreshAccessToken(config, "expired-refresh")
       ).rejects.toThrow(QuireOAuthError);
+    });
+
+    it("should throw INVALID_RESPONSE on invalid JSON", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response("not json at all", { status: 200 })
+      );
+
+      const config = {
+        clientId: "id",
+        clientSecret: "secret",
+        redirectUri: "http://localhost:3000/callback",
+      };
+
+      try {
+        await refreshAccessToken(config, "refresh-token");
+        expect.unreachable("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(QuireOAuthError);
+        expect((err as QuireOAuthError).code).toBe("INVALID_RESPONSE");
+      }
+    });
+
+    it("should throw INVALID_RESPONSE when JSON fails Zod schema", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify({ invalid: true }), { status: 200 })
+      );
+
+      const config = {
+        clientId: "id",
+        clientSecret: "secret",
+        redirectUri: "http://localhost:3000/callback",
+      };
+
+      try {
+        await refreshAccessToken(config, "refresh-token");
+        expect.unreachable("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(QuireOAuthError);
+        expect((err as QuireOAuthError).code).toBe("INVALID_RESPONSE");
+      }
+    });
+
+    it("should abort on timeout", async () => {
+      vi.useFakeTimers();
+
+      // Track reject functions so we can avoid unhandled rejection warnings
+      const pendingRejects: ((reason: unknown) => void)[] = [];
+
+      vi.mocked(fetch).mockImplementation(
+        (_url, options) =>
+          new Promise((_resolve, reject) => {
+            pendingRejects.push(reject);
+            const signal = options?.signal;
+            if (signal) {
+              if (signal.aborted) {
+                reject(
+                  new DOMException("This operation was aborted", "AbortError")
+                );
+                return;
+              }
+              signal.addEventListener("abort", () => {
+                reject(
+                  new DOMException("This operation was aborted", "AbortError")
+                );
+              });
+            }
+          })
+      );
+
+      const config = {
+        clientId: "id",
+        clientSecret: "secret",
+        redirectUri: "http://localhost:3000/callback",
+      };
+
+      const promise = refreshAccessToken(config, "refresh-token");
+
+      // Attach a no-op catch to prevent Node's unhandled rejection detection
+      // from firing before the rejection propagates through the async chain.
+      promise.catch(() => {
+        // Intentionally empty to suppress unhandled rejection
+      });
+
+      await vi.advanceTimersByTimeAsync(30001);
+
+      try {
+        await promise;
+        expect.unreachable("Should have thrown");
+      } catch (err) {
+        expect(err).toBeDefined();
+      }
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe("exchangeCodeForToken edge cases", () => {
+    beforeEach(() => {
+      vi.stubGlobal("fetch", vi.fn());
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("should throw INVALID_RESPONSE when JSON fails Zod schema", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify({ invalid: true }), { status: 200 })
+      );
+
+      const config = {
+        clientId: "id",
+        clientSecret: "secret",
+        redirectUri: "http://localhost:3000/callback",
+      };
+
+      try {
+        await exchangeCodeForToken(config, "code");
+        expect.unreachable("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(QuireOAuthError);
+        expect((err as QuireOAuthError).code).toBe("INVALID_RESPONSE");
+      }
     });
   });
 });

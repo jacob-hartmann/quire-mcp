@@ -20,7 +20,12 @@ vi.mock("./server-token-store.js", async (importOriginal) => {
   };
 });
 
+vi.mock("../quire/token-store.js", () => ({
+  saveTokens: vi.fn(),
+}));
+
 import { getServerTokenStore } from "./server-token-store.js";
+import { saveTokens } from "../quire/token-store.js";
 
 describe("QuireClientsStore", () => {
   let store: QuireClientsStore;
@@ -632,5 +637,204 @@ describe("handleQuireOAuthCallback", () => {
         "Failed to communicate with Quire"
       );
     }
+  });
+
+  it("should succeed when saveTokens throws during callback", async () => {
+    const state = tokenStore.storePendingRequest({
+      clientId: "test-client",
+      codeChallenge: "challenge",
+      codeChallengeMethod: "S256",
+      redirectUri: "http://localhost:8080/callback",
+      clientState: "client-state",
+      scope: "read",
+    });
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: "quire-access",
+          refresh_token: "quire-refresh",
+        }),
+    } as Response);
+
+    vi.mocked(saveTokens).mockImplementation(() => {
+      throw new Error("Disk write failed");
+    });
+
+    const result = await handleQuireOAuthCallback(
+      config,
+      tokenStore,
+      "quire-auth-code",
+      state
+    );
+
+    // Should succeed despite saveTokens throwing
+    expect("redirectUrl" in result).toBe(true);
+  });
+
+  it("should persist tokens with expiresAt when expires_in is present", async () => {
+    const state = tokenStore.storePendingRequest({
+      clientId: "test-client",
+      codeChallenge: "challenge",
+      codeChallengeMethod: "S256",
+      redirectUri: "http://localhost:8080/callback",
+      clientState: "client-state",
+      scope: "read",
+    });
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: "quire-access",
+          refresh_token: "quire-refresh",
+          expires_in: 3600,
+        }),
+    } as Response);
+
+    vi.mocked(saveTokens).mockImplementation(() => {
+      // no-op
+    });
+
+    await handleQuireOAuthCallback(
+      config,
+      tokenStore,
+      "quire-auth-code",
+      state
+    );
+
+    expect(saveTokens).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessToken: "quire-access",
+        refreshToken: "quire-refresh",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        expiresAt: expect.any(String),
+      })
+    );
+  });
+
+  it("should fall back to quireState when clientState is empty", async () => {
+    const state = tokenStore.storePendingRequest({
+      clientId: "test-client",
+      codeChallenge: "challenge",
+      codeChallengeMethod: "S256",
+      redirectUri: "http://localhost:8080/callback",
+      scope: "read",
+      // No clientState
+    });
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: "quire-access",
+        }),
+    } as Response);
+
+    const result = await handleQuireOAuthCallback(
+      config,
+      tokenStore,
+      "quire-auth-code",
+      state
+    );
+
+    expect("redirectUrl" in result).toBe(true);
+    if ("redirectUrl" in result) {
+      // State should be the quireState (the state param we passed in)
+      expect(result.redirectUrl).toContain(
+        `state=${encodeURIComponent(state)}`
+      );
+    }
+  });
+});
+
+describe("exchangeRefreshToken edge cases", () => {
+  let provider: QuireProxyOAuthProvider;
+  let mockTokenStore: ServerTokenStore;
+  let config: HttpServerConfig;
+
+  beforeEach(() => {
+    mockTokenStore = new ServerTokenStore();
+    vi.mocked(getServerTokenStore).mockReturnValue(mockTokenStore);
+
+    config = {
+      host: "127.0.0.1",
+      port: 3000,
+      issuerUrl: "http://localhost:3000",
+      quireClientId: "quire-client-id",
+      quireClientSecret: "quire-client-secret",
+      quireRedirectUri: "http://localhost:3000/oauth/callback",
+    };
+
+    provider = new QuireProxyOAuthProvider(config);
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("should succeed when saveTokens throws during refresh", async () => {
+    const refreshToken = mockTokenStore.storeRefreshToken({
+      quireRefreshToken: "quire-refresh",
+      clientId: "test-client",
+      scope: "read",
+    });
+
+    const client: OAuthClientInformationFull = {
+      client_id: "test-client",
+      client_id_issued_at: Date.now(),
+      redirect_uris: ["http://localhost/callback"],
+    };
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: "new-quire-access",
+          refresh_token: "new-quire-refresh",
+          expires_in: 3600,
+        }),
+    } as Response);
+
+    vi.mocked(saveTokens).mockImplementation(() => {
+      throw new Error("Disk write failed");
+    });
+
+    const tokens = await provider.exchangeRefreshToken(client, refreshToken);
+
+    // Should succeed despite saveTokens error
+    expect(tokens.access_token).toBeDefined();
+    expect(tokens.token_type).toBe("bearer");
+  });
+
+  it("should not issue new refresh token when Quire omits refresh_token", async () => {
+    const refreshToken = mockTokenStore.storeRefreshToken({
+      quireRefreshToken: "quire-refresh",
+      clientId: "test-client",
+      scope: "read",
+    });
+
+    const client: OAuthClientInformationFull = {
+      client_id: "test-client",
+      client_id_issued_at: Date.now(),
+      redirect_uris: ["http://localhost/callback"],
+    };
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: "new-quire-access",
+          // No refresh_token
+        }),
+    } as Response);
+
+    const tokens = await provider.exchangeRefreshToken(client, refreshToken);
+
+    expect(tokens.access_token).toBeDefined();
+    expect(tokens.refresh_token).toBeUndefined();
   });
 });

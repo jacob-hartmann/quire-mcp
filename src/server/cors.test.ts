@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isCorsAllowedPath } from "./cors.js";
+import { isCorsAllowedPath, matchesAllowedPathBoundary } from "./cors.js";
 
 describe("isCorsAllowedPath", () => {
   it("allows known OAuth discovery endpoints", () => {
@@ -39,5 +39,16 @@ describe("isCorsAllowedPath", () => {
   it("rejects unrelated endpoints", () => {
     expect(isCorsAllowedPath("/mcp")).toBe(false);
     expect(isCorsAllowedPath("/")).toBe(false);
+  });
+});
+
+describe("matchesAllowedPathBoundary", () => {
+  it("matches when allowed path ends with slash", () => {
+    expect(matchesAllowedPathBoundary("/foo/bar", "/foo/")).toBe(true);
+    expect(matchesAllowedPathBoundary("/foo/", "/foo/")).toBe(true);
+  });
+
+  it("rejects when request path does not start with slash-ending allowed path", () => {
+    expect(matchesAllowedPathBoundary("/other", "/foo/")).toBe(false);
   });
 });

@@ -352,6 +352,39 @@ describe("QuireClient", () => {
       vi.useRealTimers();
     });
 
+    it("should respect Retry-After header for retry delay", async () => {
+      vi.useFakeTimers();
+
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ message: "Rate limited" }), {
+            status: 429,
+            headers: { "Content-Type": "application/json", "Retry-After": "5" },
+          })
+        )
+        .mockResolvedValueOnce(
+          mockResponse({
+            id: "123",
+            oid: "abc",
+            name: "User",
+            nameText: "User",
+          })
+        );
+
+      const client = new QuireClient({ token: "test-token", maxRetries: 3 });
+      const resultPromise = client.getMe();
+
+      // Advance past the Retry-After delay (5 seconds)
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const result = await resultPromise;
+
+      expect(result.success).toBe(true);
+      expect(fetch).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+    });
+
     it("should send correct headers with body", async () => {
       vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ id: "123" }));
 
@@ -554,6 +587,30 @@ describe("QuireClient", () => {
           expect.any(Object)
         );
       });
+
+      it("should pass archived option as query parameter", async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(mockResponse([]));
+
+        const client = new QuireClient({ token: "test-token" });
+        await client.listProjects(undefined, { archived: true });
+
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining("archived=true"),
+          expect.any(Object)
+        );
+      });
+
+      it("should pass addTask option as query parameter", async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(mockResponse([]));
+
+        const client = new QuireClient({ token: "test-token" });
+        await client.listProjects(undefined, { addTask: true });
+
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining("add-task=true"),
+          expect.any(Object)
+        );
+      });
     });
 
     describe("getProject", () => {
@@ -736,6 +793,32 @@ describe("QuireClient", () => {
 
         expect(fetch).toHaveBeenCalledWith(
           expect.stringContaining("/project/export-json/"),
+          expect.any(Object)
+        );
+      });
+
+      it("should pass status option as query parameter", async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(mockResponse([]));
+
+        const client = new QuireClient({ token: "test-token" });
+        await client.exportProject("my-project", "json", {
+          status: "completed",
+        });
+
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining("status=completed"),
+          expect.any(Object)
+        );
+      });
+
+      it("should pass merge option as query parameter", async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(mockResponse([]));
+
+        const client = new QuireClient({ token: "test-token" });
+        await client.exportProject("my-project", "json", { merge: true });
+
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining("merge=true"),
           expect.any(Object)
         );
       });
@@ -2876,6 +2959,25 @@ describe("QuireClient", () => {
           expect(result.error.code).toBe("UNKNOWN");
         }
       });
+
+      it("should return error when response fails Zod validation", async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ invalid: true }));
+
+        const client = new QuireClient({ token: "test-token" });
+        const result = await client.uploadTaskAttachment(
+          "TaskOid123",
+          "file.txt",
+          "content"
+        );
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.code).toBe("UNKNOWN");
+          expect(result.error.message).toContain(
+            "API response validation failed"
+          );
+        }
+      });
     });
 
     describe("uploadCommentAttachment", () => {
@@ -3022,6 +3124,25 @@ describe("QuireClient", () => {
         expect(result.success).toBe(false);
         if (!result.success) {
           expect(result.error.code).toBe("UNKNOWN");
+        }
+      });
+
+      it("should return error when response fails Zod validation", async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ invalid: true }));
+
+        const client = new QuireClient({ token: "test-token" });
+        const result = await client.uploadCommentAttachment(
+          "CommentOid123",
+          "file.txt",
+          "content"
+        );
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.code).toBe("UNKNOWN");
+          expect(result.error.message).toContain(
+            "API response validation failed"
+          );
         }
       });
     });

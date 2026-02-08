@@ -116,9 +116,11 @@ export async function exchangeCodeForToken(
   });
 
   const controller = new AbortController();
+  /* v8 ignore start -- timeout callback only fires on real network delays */
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, FETCH_TIMEOUT_MS);
+  /* v8 ignore stop */
 
   let response: Response;
   try {

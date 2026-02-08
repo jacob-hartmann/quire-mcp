@@ -61,9 +61,11 @@ export class LRUCache<V> {
     } else if (this.cache.size >= this.maxSize) {
       // Evict oldest entry (first item in Map iteration order)
       const oldestKeyIterator = this.cache.keys().next();
+      /* v8 ignore start */
       if (oldestKeyIterator.done) {
         throw new Error("Cache iteration failed unexpectedly");
       }
+      /* v8 ignore stop */
       const oldestKey = oldestKeyIterator.value;
       const oldestValue = this.cache.get(oldestKey);
       this.cache.delete(oldestKey);

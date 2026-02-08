@@ -24,7 +24,8 @@ const CORS_ALLOWED_PATHS = [
  * - allowed "/authorize" matches "/authorize" and "/authorize/anything"
  * - allowed "/authorize" does NOT match "/authorize-admin"
  */
-function matchesAllowedPathBoundary(
+/** @internal Exported for testing */
+export function matchesAllowedPathBoundary(
   requestPath: string,
   allowedPath: string
 ): boolean {

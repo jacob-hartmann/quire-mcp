@@ -223,8 +223,10 @@ export class QuireClient {
           return { success: true, data: parseResult.data as T };
         }
 
+        /* v8 ignore start -- defensive fallback, all current methods pass a schema */
         // Fallback to type assertion if no schema (for backwards compatibility)
         return { success: true, data: rawData as T };
+        /* v8 ignore stop */
       }
 
       // Handle error responses

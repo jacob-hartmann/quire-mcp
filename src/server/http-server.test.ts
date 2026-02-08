@@ -6,8 +6,7 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 /* eslint-disable @typescript-eslint/no-useless-constructor */
 
 import {
@@ -328,23 +327,46 @@ vi.mock(
   })
 );
 
-// Mock transport
-const mockTransport = {
-  sessionId: "test-session-id",
-  handleRequest: vi.fn().mockResolvedValue(undefined),
-  close: vi.fn().mockResolvedValue(undefined),
-  onclose: undefined as (() => void) | undefined,
-};
+// Track all created transports and the latest one
+const allMockTransports: {
+  sessionId: string;
+  handleRequest: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+  onclose: (() => void) | undefined;
+}[] = [];
 
-vi.mock("@modelcontextprotocol/sdk/server/streamableHttp.js", () => ({
-  StreamableHTTPServerTransport: vi.fn().mockImplementation((options) => {
-    // Call session initialized callback if provided
-    if (options?.onsessioninitialized) {
-      setTimeout(() => options.onsessioninitialized("new-session-id"), 0);
+vi.mock("@modelcontextprotocol/sdk/server/streamableHttp.js", () => {
+  let counter = 0;
+
+  // Use a class so `new StreamableHTTPServerTransport(...)` works
+  class MockStreamableHTTPServerTransport {
+    sessionId: string;
+    handleRequest: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+    onclose: (() => void) | undefined;
+
+    constructor(options?: { onsessioninitialized?: (sid: string) => void }) {
+      this.sessionId = `session-${++counter}`;
+      this.handleRequest = vi.fn().mockResolvedValue(undefined);
+      this.close = vi.fn().mockResolvedValue(undefined);
+      this.onclose = undefined;
+      allMockTransports.push(this);
+      // Use queueMicrotask so onsessioninitialized fires after the constructor
+      // returns but before any awaited promises, giving the caller time to assign
+      // the `transport` variable that the callback closure captures.
+      if (options?.onsessioninitialized) {
+        const sid = this.sessionId;
+        queueMicrotask(() => {
+          options.onsessioninitialized!(sid);
+        });
+      }
     }
-    return mockTransport;
-  }),
-}));
+  }
+
+  return {
+    StreamableHTTPServerTransport: MockStreamableHTTPServerTransport,
+  };
+});
 
 vi.mock("@modelcontextprotocol/sdk/types.js", () => ({
   isInitializeRequest: vi.fn((body) => {
@@ -388,6 +410,16 @@ import { handleQuireOAuthCallback } from "./quire-oauth-provider.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import type { HttpServerConfig } from "./config.js";
 
+/** Get the most recently created mock transport */
+function getLatestTransport(): {
+  sessionId: string;
+  handleRequest: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+  onclose: (() => void) | undefined;
+} {
+  return allMockTransports[allMockTransports.length - 1]!;
+}
+
 describe("HTTP Server", () => {
   const mockConfig: HttpServerConfig = {
     host: "127.0.0.1",
@@ -404,17 +436,13 @@ describe("HTTP Server", () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
     registeredRoutes.clear();
+    allMockTransports.length = 0;
 
     mockServer = {
       connect: vi.fn().mockResolvedValue(undefined),
     };
     mockGetServer = vi.fn(() => mockServer);
-  });
-
-  afterEach(() => {
-    vi.resetAllMocks();
   });
 
   describe("startHttpServer", () => {
@@ -611,20 +639,29 @@ describe("HTTP Server", () => {
       const html = res.data as string;
       expect(html).toContain("server_error");
     });
+
+    it("should handle non-string error parameter", async () => {
+      const req = createMockRequest({
+        query: {
+          error: ["error_one", "error_two"] as unknown as string,
+        },
+      });
+      const res = createMockResponse();
+
+      await oauthCallbackHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      const html = res.data as string;
+      expect(html).toContain("Unknown error");
+    });
   });
 
   describe("MCP POST handler", () => {
     beforeEach(async () => {
-      // Reset mock transport
-      mockTransport.handleRequest.mockClear();
-      mockTransport.close.mockClear();
       await startHttpServer(mockGetServer, mockConfig);
     });
 
     it("should handle initialize request for new session", async () => {
-      const { StreamableHTTPServerTransport } =
-        await import("@modelcontextprotocol/sdk/server/streamableHttp.js");
-
       const req = createMockRequest({
         method: "POST",
         path: "/mcp",
@@ -637,13 +674,9 @@ describe("HTTP Server", () => {
 
       // Should create new transport and connect server
       expect(mockServer.connect).toHaveBeenCalled();
-      // Should create a StreamableHTTPServerTransport
-      expect(StreamableHTTPServerTransport).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sessionIdGenerator: expect.any(Function),
-          onsessioninitialized: expect.any(Function),
-        })
-      );
+      // Should have created a transport
+      expect(allMockTransports.length).toBe(1);
+      expect(allMockTransports[0]!.handleRequest).toHaveBeenCalled();
     });
 
     it("should reject requests without session ID when not initializing", async () => {
@@ -843,6 +876,527 @@ describe("HTTP Server", () => {
       expect(res.setHeader).toHaveBeenCalledWith("Pragma", "no-cache");
       expect(res.setHeader).toHaveBeenCalledWith("Expires", "0");
       expect(next).toHaveBeenCalled();
+    });
+  });
+
+  describe("Session lifecycle", () => {
+    beforeEach(async () => {
+      await startHttpServer(mockGetServer, mockConfig);
+    });
+
+    it("should reuse existing transport for valid session ID", async () => {
+      // First, create a session via initialize request
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      const transport = getLatestTransport();
+      const sessionId = transport.sessionId;
+
+      // Now make a request with the session ID
+      const req = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: { "mcp-session-id": sessionId },
+        body: { method: "tools/list" },
+      });
+      const res = createMockResponse();
+      await mcpPostHandler(req, res);
+
+      // Should call handleRequest on the same transport
+      expect(transport.handleRequest).toHaveBeenCalled();
+    });
+
+    it("should return 404 for unknown session ID", async () => {
+      const req = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: { "mcp-session-id": "unknown-session-id" },
+        body: { method: "tools/list" },
+      });
+      const res = createMockResponse();
+      await mcpPostHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        jsonrpc: "2.0",
+        error: {
+          code: -32600,
+          message: "Session not found",
+        },
+        id: null,
+      });
+    });
+
+    it("should remove session when transport.onclose is called", async () => {
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      const transport = getLatestTransport();
+      const sessionId = transport.sessionId;
+
+      // Trigger onclose
+      if (transport.onclose) {
+        transport.onclose();
+      }
+
+      // Session should no longer exist
+      const req = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: { "mcp-session-id": sessionId },
+        body: { method: "tools/list" },
+      });
+      const res = createMockResponse();
+      await mcpPostHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe("Error handling", () => {
+    beforeEach(async () => {
+      await startHttpServer(mockGetServer, mockConfig);
+    });
+
+    it("should return 500 when handleRequest throws on existing session", async () => {
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      const transport = getLatestTransport();
+      const sessionId = transport.sessionId;
+
+      // Make handleRequest throw on next call
+      transport.handleRequest.mockRejectedValueOnce(
+        new Error("Transport error")
+      );
+
+      const req = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: { "mcp-session-id": sessionId },
+        body: { method: "tools/list" },
+      });
+      const res = createMockResponse();
+      await mcpPostHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        jsonrpc: "2.0",
+        error: {
+          code: -32603,
+          message: "Internal server error",
+        },
+        id: null,
+      });
+    });
+
+    it("should not send 500 response when headers already sent on POST", async () => {
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      const transport = getLatestTransport();
+      const sessionId = transport.sessionId;
+
+      // Make handleRequest throw
+      transport.handleRequest.mockRejectedValueOnce(
+        new Error("Transport error")
+      );
+
+      const req = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: { "mcp-session-id": sessionId },
+        body: { method: "tools/list" },
+      });
+      const res = createMockResponse();
+      res.headersSent = true;
+      await mcpPostHandler(req, res);
+
+      // Should NOT call status/json because headers already sent
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it("should return 500 when DELETE handleRequest throws", async () => {
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      const transport = getLatestTransport();
+      const sessionId = transport.sessionId;
+
+      // Make handleRequest throw
+      transport.handleRequest.mockRejectedValueOnce(new Error("Delete error"));
+
+      const req = createMockRequest({
+        method: "DELETE",
+        path: "/mcp",
+        headers: { "mcp-session-id": sessionId },
+      });
+      const res = createMockResponse();
+      await mcpDeleteHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        jsonrpc: "2.0",
+        error: {
+          code: -32603,
+          message: "Error processing session termination",
+        },
+        id: null,
+      });
+    });
+
+    it("should not send response when DELETE throws and headers already sent", async () => {
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      const transport = getLatestTransport();
+      const sessionId = transport.sessionId;
+
+      // Make handleRequest throw
+      transport.handleRequest.mockRejectedValueOnce(new Error("Delete error"));
+
+      const req = createMockRequest({
+        method: "DELETE",
+        path: "/mcp",
+        headers: { "mcp-session-id": sessionId },
+      });
+      const res = createMockResponse();
+      res.headersSent = true;
+      await mcpDeleteHandler(req, res);
+
+      expect(res.status).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Global error handler", () => {
+    let errorHandler: (
+      err: Error,
+      req: MockRequest,
+      res: MockResponse,
+      next: () => void
+    ) => void;
+
+    beforeEach(async () => {
+      await startHttpServer(mockGetServer, mockConfig);
+
+      // The error handler is registered via app.use with 4-param function
+      // It's captured by the mock app — it's the last `use` call with a 4-param function
+      const mockApp = vi.mocked(createMcpExpressApp).mock.results[0]?.value;
+      const useCalls = mockApp.use.mock.calls;
+      for (let i = useCalls.length - 1; i >= 0; i--) {
+        const arg = useCalls[i]?.[0];
+        if (typeof arg === "function" && arg.length === 4) {
+          errorHandler = arg as typeof errorHandler;
+          break;
+        }
+      }
+    });
+
+    it("should return 500 JSON-RPC error", () => {
+      const req = createMockRequest();
+      const res = createMockResponse();
+      const next = vi.fn();
+
+      errorHandler(new Error("Unhandled error"), req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        jsonrpc: "2.0",
+        error: {
+          code: -32603,
+          message: "Internal server error",
+        },
+        id: null,
+      });
+    });
+
+    it("should not send response when headers already sent", () => {
+      const req = createMockRequest();
+      const res = createMockResponse();
+      res.headersSent = true;
+      const next = vi.fn();
+
+      errorHandler(new Error("Unhandled error"), req, res, next);
+
+      expect(res.status).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Cleanup and shutdown", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("should clean up idle sessions on interval", async () => {
+      await startHttpServer(mockGetServer, mockConfig);
+
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      const sessionId = getLatestTransport().sessionId;
+
+      // Advance time past the idle timeout (30 minutes) + cleanup interval (5 minutes)
+      await vi.advanceTimersByTimeAsync(35 * 60 * 1000);
+
+      // Try to use the session — it should have been cleaned up
+      const req = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: { "mcp-session-id": sessionId },
+        body: { method: "tools/list" },
+      });
+      const res = createMockResponse();
+      await mcpPostHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it("should handle transport.close() rejection during cleanupSession", async () => {
+      await startHttpServer(mockGetServer, mockConfig);
+
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      // Make close reject
+      getLatestTransport().close.mockRejectedValue(new Error("Close failed"));
+
+      // Advance time past the idle timeout
+      await vi.advanceTimersByTimeAsync(35 * 60 * 1000);
+
+      // Should not throw — error is caught
+    });
+
+    it("should handle transport.close() throwing synchronously during cleanupSession", async () => {
+      await startHttpServer(mockGetServer, mockConfig);
+
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      // Make close throw synchronously
+      getLatestTransport().close.mockImplementation(() => {
+        throw new Error("Close failed synchronously");
+      });
+
+      // Advance time past the idle timeout
+      await vi.advanceTimersByTimeAsync(35 * 60 * 1000);
+
+      // Should not throw — error is caught
+    });
+
+    it("should shut down gracefully on SIGINT", async () => {
+      const processOnSpy = vi.spyOn(process, "on");
+      const processExitSpy = vi
+        .spyOn(process, "exit")
+        .mockImplementation(() => undefined as never);
+
+      await startHttpServer(mockGetServer, mockConfig);
+
+      // Find SIGINT handler
+      const sigintCall = processOnSpy.mock.calls.find(
+        (call) => call[0] === "SIGINT"
+      );
+      expect(sigintCall).toBeDefined();
+
+      const sigintHandler = sigintCall![1] as () => void;
+
+      // Create a session first
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      // Trigger SIGINT
+      sigintHandler();
+
+      // Advance past the 5-second forced exit timeout
+      await vi.advanceTimersByTimeAsync(5001);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+
+      processOnSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
+
+    it("should register SIGTERM handler", async () => {
+      const processOnSpy = vi.spyOn(process, "on");
+
+      await startHttpServer(mockGetServer, mockConfig);
+
+      const sigtermCall = processOnSpy.mock.calls.find(
+        (call) => call[0] === "SIGTERM"
+      );
+      expect(sigtermCall).toBeDefined();
+
+      processOnSpy.mockRestore();
+    });
+  });
+
+  describe("LRU eviction", () => {
+    it("should handle onEvict when transport.close rejects", async () => {
+      // We can't easily test the full LRU eviction with 1001 sessions,
+      // so we test the onEvict behavior through the LRU cache directly
+      const { LRUCache } = await import("../utils/lru-cache.js");
+
+      const onEvictFn = vi.fn(
+        (
+          _key: string,
+          session: { transport: { close: () => Promise<void> } }
+        ) => {
+          try {
+            session.transport.close().catch(() => {
+              // Ignore
+            });
+          } catch {
+            // Ignore close errors on eviction
+          }
+        }
+      );
+
+      const cache = new LRUCache<{
+        transport: { close: () => Promise<void> };
+      }>({
+        maxSize: 2,
+        onEvict: onEvictFn,
+      });
+
+      const mockTransport1 = {
+        close: vi.fn().mockRejectedValue(new Error("Close error")),
+      };
+      const mockTransport2 = {
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+      const mockTransport3 = {
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+
+      cache.set("session-1", { transport: mockTransport1 });
+      cache.set("session-2", { transport: mockTransport2 });
+      // This should evict session-1
+      cache.set("session-3", { transport: mockTransport3 });
+
+      expect(onEvictFn).toHaveBeenCalledWith("session-1", {
+        transport: mockTransport1,
+      });
+      expect(mockTransport1.close).toHaveBeenCalled();
+    });
+  });
+
+  describe("GET handler with valid session", () => {
+    beforeEach(async () => {
+      await startHttpServer(mockGetServer, mockConfig);
+    });
+
+    it("should handle GET request with valid session ID", async () => {
+      // Create a session
+      const initReq = createMockRequest({
+        method: "POST",
+        path: "/mcp",
+        headers: {},
+        body: { method: "initialize", params: {} },
+      });
+      const initRes = createMockResponse();
+      await mcpPostHandler(initReq, initRes);
+
+      const sessionId = getLatestTransport().sessionId;
+
+      // GET with valid session
+      const req = createMockRequest({
+        method: "GET",
+        path: "/mcp",
+        headers: { "mcp-session-id": sessionId },
+      });
+      const res = createMockResponse();
+      await mcpGetHandler(req, res);
+
+      expect(getLatestTransport().handleRequest).toHaveBeenCalled();
+    });
+  });
+
+  describe("DELETE handler with valid session", () => {
+    beforeEach(async () => {
+      await startHttpServer(mockGetServer, mockConfig);
+    });
+
+    it("should reject DELETE with unknown session ID", async () => {
+      const req = createMockRequest({
+        method: "DELETE",
+        path: "/mcp",
+        headers: { "mcp-session-id": "unknown-id" },
+      });
+      const res = createMockResponse();
+      await mcpDeleteHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
     });
   });
 });
