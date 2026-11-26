@@ -15,6 +15,22 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Security
 
+## [1.0.5] - 2026-11-26
+
+Dependency and CI maintenance release. No changes to the MCP tool, resource, or prompt surface: the `initialize`, `tools/list`, `resources/list`, `resources/templates/list` and `prompts/list` responses are identical to 1.0.4.
+
+### Changed
+
+- Bump `@modelcontextprotocol/sdk` from `1.27.1` to `1.32.2` and `zod` from `4.3.6` to `4.6.7`.
+- Update `express`, `express-rate-limit`, `helmet` and `dotenv` to their latest releases within the current major versions.
+- Update development tooling: eslint, typescript-eslint, vitest, prettier, tsx and tsup (now `9.0.0`).
+- Use `express-rate-limit`'s `limit` option instead of the deprecated `max` alias (same behaviour).
+- Bump the pinned GitHub Actions used in CI and release workflows.
+
+### Security
+
+- Refresh transitive dependencies to patched versions, including `hono`, `@hono/node-server`, `fast-uri`, `qs` and `path-to-regexp`. `pnpm audit --prod` now reports no known vulnerabilities.
+
 ## [1.0.1] - 2026-02-07
 
 ### Added
