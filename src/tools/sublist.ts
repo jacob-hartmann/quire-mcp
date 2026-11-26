@@ -160,7 +160,7 @@ export function registerSublistTools(server: McpServer): void {
         result = await clientResult.client.getSublist(oid);
       } else if (ownerType && ownerId && sublistId) {
         result = await clientResult.client.getSublist(
-          ownerType as "organization" | "project",
+          ownerType,
           ownerId,
           sublistId
         );
@@ -332,7 +332,7 @@ export function registerSublistTools(server: McpServer): void {
         result = await clientResult.client.updateSublist(oid, params);
       } else if (ownerType && ownerId && sublistId) {
         result = await clientResult.client.updateSublist(
-          ownerType as "organization" | "project",
+          ownerType,
           ownerId,
           sublistId,
           params
@@ -393,7 +393,7 @@ export function registerSublistTools(server: McpServer): void {
         result = await clientResult.client.deleteSublist(oid);
       } else if (ownerType && ownerId && sublistId) {
         result = await clientResult.client.deleteSublist(
-          ownerType as "organization" | "project",
+          ownerType,
           ownerId,
           sublistId
         );

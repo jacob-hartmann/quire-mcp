@@ -4,8 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 // Store the request handler to simulate HTTP callbacks
 let httpRequestHandler:
-  | ((req: IncomingMessage, res: ServerResponse) => void)
-  | null = null;
+  ((req: IncomingMessage, res: ServerResponse) => void) | null = null;
 
 // Mock the dependencies
 vi.mock("./oauth.js", () => ({

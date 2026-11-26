@@ -510,7 +510,7 @@ describe("HTTP Server", () => {
 
       expect(rateLimit.default).toHaveBeenCalledWith({
         windowMs: 60000,
-        max: 100,
+        limit: 100,
         standardHeaders: true,
         legacyHeaders: false,
         message: { error: "Too many requests, please try again later" },
@@ -643,7 +643,7 @@ describe("HTTP Server", () => {
     it("should handle non-string error parameter", async () => {
       const req = createMockRequest({
         query: {
-          error: ["error_one", "error_two"] as unknown as string,
+          error: ["error_one", "error_two"],
         },
       });
       const res = createMockResponse();

@@ -16,8 +16,7 @@ import { QuireClient, createClientFromAuth } from "./client.js";
  * Result type for getQuireClient - allows callers to handle errors gracefully
  */
 export type QuireClientResult =
-  | { success: true; client: QuireClient }
-  | { success: false; error: string };
+  { success: true; client: QuireClient } | { success: false; error: string };
 
 /**
  * Get a QuireClient from MCP request context.

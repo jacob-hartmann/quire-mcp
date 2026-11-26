@@ -52,10 +52,12 @@ export default tseslint.config(
     ],
   },
   {
-    files: ["**/*.test.ts", "**/*.spec.ts"],
+    files: ["**/*.test.ts", "**/*.spec.ts", "**/__test-utils__.ts"],
     rules: {
       "@typescript-eslint/unbound-method": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
+      // Tests intentionally pass plain mock objects where SDK/Node classes are expected.
+      "@typescript-eslint/no-unsafe-class-instance-assignment": "off",
     },
   }
 );
