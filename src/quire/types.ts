@@ -223,8 +223,7 @@ export interface UpdateProjectParams {
  * Result type for Quire API calls
  */
 export type QuireResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: QuireClientError };
+  { success: true; data: T } | { success: false; error: QuireClientError };
 
 /**
  * Custom error class for Quire client errors

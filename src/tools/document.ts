@@ -155,7 +155,7 @@ export function registerDocumentTools(server: McpServer): void {
         result = await clientResult.client.getDocument(oid);
       } else if (ownerType && ownerId && documentId) {
         result = await clientResult.client.getDocument(
-          ownerType as "organization" | "project",
+          ownerType,
           ownerId,
           documentId
         );
@@ -310,7 +310,7 @@ export function registerDocumentTools(server: McpServer): void {
         result = await clientResult.client.updateDocument(oid, params);
       } else if (ownerType && ownerId && documentId) {
         result = await clientResult.client.updateDocument(
-          ownerType as "organization" | "project",
+          ownerType,
           ownerId,
           documentId,
           params
@@ -371,7 +371,7 @@ export function registerDocumentTools(server: McpServer): void {
         result = await clientResult.client.deleteDocument(oid);
       } else if (ownerType && ownerId && documentId) {
         result = await clientResult.client.deleteDocument(
-          ownerType as "organization" | "project",
+          ownerType,
           ownerId,
           documentId
         );

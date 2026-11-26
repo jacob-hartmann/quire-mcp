@@ -41,10 +41,7 @@ export class QuireAuthError extends Error {
   constructor(
     message: string,
     public readonly code:
-      | "NO_CONFIG"
-      | "OAUTH_FAILED"
-      | "USER_CANCELLED"
-      | "TIMEOUT"
+      "NO_CONFIG" | "OAUTH_FAILED" | "USER_CANCELLED" | "TIMEOUT"
   ) {
     super(message);
     this.name = "QuireAuthError";
